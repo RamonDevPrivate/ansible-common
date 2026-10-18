@@ -1,0 +1,67 @@
+{
+    "schema_version": 1,
+    "host": "host-c",
+    "collected_at": "2026-09-30T08:00:00Z",
+    "system": {
+        "distribution": "Debian",
+        "version": "12.12",
+        "release": "bookworm",
+        "kernel": "6.1.0-40-amd64",
+        "cores": 2,
+        "ram_mb": 3920,
+        "disk": {
+            "total_bytes": 21474836480,
+            "mounts": [
+                {
+                    "mount": "/",
+                    "device": "/dev/sda1",
+                    "fstype": "ext4",
+                    "size_bytes": 21474836480
+                }
+            ]
+        }
+    },
+    "addresses": [],
+    "users": [],
+    "ssh": {
+        "key_files": [
+            ".ssh/authorized_keys",
+            ".ssh/authorized_keys2"
+        ],
+        "key_files_source": "sshd",
+        "keys_command": false
+    },
+    "ufw": {
+        "state": "active",
+        "logging": "on (low)",
+        "default_incoming": "deny",
+        "default_outgoing": "allow",
+        "default_routed": "disabled",
+        "rules": []
+    },
+    "listeners": [
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 22,
+            "processes": [
+                "sshd"
+            ]
+        }
+    ],
+    "docker": [],
+    "fail2ban": {
+        "state": "active",
+        "jails": [
+            "sshd"
+        ]
+    },
+    "auto_updates": {
+        "installed": true,
+        "update_lists": "1",
+        "unattended_upgrade": "1",
+        "timer": "enabled",
+        "last_success": "2026-09-30T04:00:00+00:00"
+    }
+}

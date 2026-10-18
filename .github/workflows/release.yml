@@ -1,0 +1,306 @@
+---
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_as:
+        description: "Force a version, e.g. 1.0.0. Blank: automatic bump. Required for the first release."
+        required: false
+        type: string
+      dry_run:
+        description: "Run everything without pushing, releasing or deploying."
+        required: false
+        default: false
+        type: boolean
+
+env:
+  COLLECTION_DIR: ansible_collections/ramondevprivate/common
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  guard:
+    name: Check branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Only release from main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Releases must run on main, got $GITHUB_REF"
+            exit 1
+          fi
+
+  ci:
+    name: CI
+    needs: [guard]
+    uses: $/.github/workflows/ci.yml
+    with:
+      cache: false # nothing from a cache in a release run
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+      security-events: write # required for uploading results to code scanning
+
+  release:
+    name: Version, build and tag
+    needs: [ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: read # the pushes and the release use the app token
+      id-token: write # required for actions/attest-build-provenance to sign with a Sigstore token
+      attestations: write # required to persist the provenance attestation
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tarball: ${{ steps.build.outputs.tarball }}
+      sha256: ${{ steps.build.outputs.sha256 }}
+    steps:
+      - name: Create an app token # github-actions[bot] cannot bypass the main ruleset, an app can
+        id: app-token
+        # yamllint disable-line rule:line-length
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0 # zizmor: ignore[github-app] -- contents:write only, credentials scoped to the release environment
+        with:
+          client-id: ${{ vars.RELEASE_GITHUB_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # commitizen reads the version from the tags and the commits since the last one
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true # zizmor: ignore[artipacked] -- required for git push in a later step
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Bump version, update changelog, commit and tag
+        id: bump
+        env:
+          RELEASE_AS: ${{ inputs.release_as }}
+        run: |
+          if tag=$(git describe --exact-match --tags --match 'v*' HEAD 2>/dev/null); then
+            # rerun after a failed release: main already carries the release commit and tag, release that version
+            echo "::notice::HEAD is already $tag, releasing it without a new bump"
+          elif [ -z "$(git tag --list 'v*')" ]; then
+            # first release: galaxy.yml and its changelog section were prepared by hand, so it is only tagged
+            galaxy=$(sed -n 's/^version: *//p' "$COLLECTION_DIR/galaxy.yml")
+            if [ -z "$RELEASE_AS" ] || [ "$RELEASE_AS" != "$galaxy" ]; then
+              echo "::error::The first release needs release_as equal to the galaxy.yml version ($galaxy)"
+              exit 1
+            fi
+            git tag -a "v$RELEASE_AS" -m "v$RELEASE_AS"
+          elif [ -n "$RELEASE_AS" ]; then
+            uv run --locked cz bump "$RELEASE_AS" --changelog --yes
+          elif ! uv run --locked cz bump --changelog --yes; then
+            # exit 21: only commits that don't bump (docs, chore, ci, ...); a release then needs release_as
+            echo "::error::cz bump failed; if it found no commits that bump the version, set release_as"
+            exit 1
+          fi
+
+          VERSION=$(uv run --locked cz version --project)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Build the collection
+        id: build
+        run: |
+          uv run --locked ansible-galaxy collection build "$COLLECTION_DIR" --output-path dist
+          tarball=$(cd dist && ls ramondevprivate-common-*.tar.gz)
+          {
+            echo "tarball=$tarball"
+            echo "sha256=$(sha256sum "dist/$tarball" | cut -d' ' -f1)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-artifacts
+          path: dist/${{ steps.build.outputs.tarball }}
+          retention-days: 90
+      - name: Extract latest changelog section
+        run: |
+          awk '
+            /^## v[0-9]+\.[0-9]+\.[0-9]+/ { c++; if (c==2) exit; next }
+            c==1 { print }
+          ' "$COLLECTION_DIR/CHANGELOG.md" > RELEASE_NOTES.md
+          if ! grep -q '[^[:space:]]' RELEASE_NOTES.md; then
+            echo "::error::no changelog section found for the release (expected a '## vX.Y.Z' heading)"
+            exit 1
+          fi
+      - name: Push commit and tag
+        if: ${{ !inputs.dry_run }}
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "refs/tags/v$VERSION"
+      - name: Attest build provenance
+        id: provenance
+        if: ${{ !inputs.dry_run }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/${{ steps.build.outputs.tarball }}
+      - name: Collect the attestation bundle # released as an asset so it can be verified without the API
+        if: ${{ !inputs.dry_run }}
+        env:
+          TARBALL: ${{ steps.build.outputs.tarball }}
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: cp "$PROVENANCE_BUNDLE" "dist/${TARBALL}.provenance.intoto.jsonl"
+      - name: Append install instructions and checksum to the release notes
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          TARBALL: ${{ steps.build.outputs.tarball }}
+          SHA256: ${{ steps.build.outputs.sha256 }}
+        run: |
+          {
+            echo ""
+            echo "### Installation"
+            echo ""
+            echo '```yaml'
+            echo "collections:"
+            echo "  - name: https://github.com/${GITHUB_REPOSITORY}.git#/${COLLECTION_DIR}/"
+            echo "    type: git"
+            echo "    version: v${VERSION}"
+            echo '```'
+            echo ""
+            echo "### Package checksum"
+            echo ""
+            echo "\`$TARBALL\`"
+            echo ""
+            echo "- SHA-256: \`$SHA256\`"
+          } >> RELEASE_NOTES.md
+      - name: Create GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+          TARBALL: ${{ steps.build.outputs.tarball }}
+        run: |
+          if gh release view "v${VERSION}" > /dev/null 2>&1; then
+            echo "::notice::release v${VERSION} exists already"
+            exit 0
+          fi
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file RELEASE_NOTES.md \
+            "dist/$TARBALL" \
+            "dist/${TARBALL}.provenance.intoto.jsonl"
+      - name: Write release summary
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          {
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "## 🧪 Dry run: v$VERSION was not pushed or released"
+            else
+              echo "## 📦 Released v$VERSION"
+            fi
+            echo ""
+            cat RELEASE_NOTES.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  verify:
+    name: Verify the release
+    needs: [release]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # required to download the release assets
+      attestations: read # required for gh attestation verify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: v${{ needs.release.outputs.version }}
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Verify the tarball's checksum and provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.release.outputs.version }}
+          TARBALL: ${{ needs.release.outputs.tarball }}
+          SHA256: ${{ needs.release.outputs.sha256 }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern "$TARBALL"
+          echo "$SHA256  $TARBALL" | sha256sum --check
+          gh attestation verify "$TARBALL" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+      - name: Install from the tag and read every plugin's docs
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+          ANSIBLE_COLLECTIONS_PATH: ${{ runner.temp }}/collections
+          ANSIBLE: ${{ github.workspace }}/.venv/bin
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          "$ANSIBLE/ansible-galaxy" collection install \
+            "git+https://github.com/${GITHUB_REPOSITORY}.git#/${COLLECTION_DIR}/,v${VERSION}" \
+            -p "$ANSIBLE_COLLECTIONS_PATH"
+          installed=$("$ANSIBLE/ansible-galaxy" collection list ramondevprivate.common --format json \
+            | jq -r '.[]["ramondevprivate.common"].version')
+          if [ "$installed" != "$VERSION" ]; then
+            echo "::error::installed ramondevprivate.common $installed, expected $VERSION"
+            exit 1
+          fi
+          checked=0
+          for type in module filter lookup role; do
+            names=$("$ANSIBLE/ansible-doc" -t "$type" -l -j ramondevprivate.common | jq -r 'keys[]')
+            for name in $names; do
+              "$ANSIBLE/ansible-doc" -t "$type" "$name" > /dev/null
+              checked=$((checked + 1))
+            done
+          done
+          if [ "$checked" -eq 0 ]; then
+            echo "::error::the installed collection lists no plugins or roles"
+            exit 1
+          fi
+
+  pages:
+    name: Deploy the docs
+    needs: [release]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+      pages: write # required to deploy to GitHub Pages
+      id-token: write # required for actions/deploy-pages to verify the deployment origin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: v${{ needs.release.outputs.version }}
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - name: Install dependencies
+        run: uv sync --locked --group docs
+      - name: Build the docs
+        run: uv run --locked --group docs docs/build.sh
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/build/html
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

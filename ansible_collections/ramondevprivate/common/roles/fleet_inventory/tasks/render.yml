@@ -1,0 +1,111 @@
+---
+# Runs once, on the controller, without sudo. In check mode nothing is written (see README).
+- name: render | Render on the controller
+  run_once: true
+  delegate_to: localhost
+  become: false
+  block:
+    - name: render | Create output directories
+      ansible.builtin.file:
+        path: "{{ __fleet_inventory_dir.path }}"
+        state: directory
+        mode: "{{ __fleet_inventory_dir.mode }}"
+      loop:
+        - { path: "{{ fleet_inventory_data_dir }}", mode: "0700" }
+        - { path: "{{ fleet_inventory_output_dir }}", mode: "0755" }
+        - { path: "{{ fleet_inventory_output_dir }}/Servers", mode: "0755" }
+      loop_control:
+        loop_var: __fleet_inventory_dir
+        label: "{{ __fleet_inventory_dir.path }}"
+
+    # Your own notes: created once for hosts in this run, never overwritten (force: false), not written in check mode
+    - name: render | Create description folder
+      ansible.builtin.file:
+        path: "{{ fleet_inventory_output_dir }}/{{ fleet_inventory_descriptions_dir }}"
+        state: directory
+        mode: "0755"
+      when: fleet_inventory_descriptions_dir | length > 0
+
+    - name: render | Create missing server descriptions
+      ansible.builtin.copy:
+        content: |
+          No description yet ^summary
+
+          %% Your description of {{ __fleet_inventory_desc_host }}. The whole note is shown on its server page; the line
+          ending in " ^summary" is shown in "Server List" (keep the marker, with a space before it).
+          fleet_inventory created this note once and never changes it. %%
+        dest: >-
+          {{ [fleet_inventory_output_dir, fleet_inventory_descriptions_dir,
+              __fleet_inventory_desc_host ~ ' description.md'] | ansible.builtin.path_join }}
+        mode: "0644"
+        force: false
+      loop: "{{ ansible_play_hosts_all if fleet_inventory_descriptions_dir | length > 0 else [] }}"
+      loop_control:
+        loop_var: __fleet_inventory_desc_host
+
+    # Targeted but not collected (unreachable or failed): keep the stored snapshot and remember that in it, so the
+    # marker survives runs that don't target the host (--limit). Hosts outside this run are neither read nor written.
+    - name: render | Mark stored snapshots of unreached hosts
+      ansible.builtin.set_fact:
+        __fleet_inventory_unreached: >-
+          {{ __fleet_inventory_stored_snapshots
+             | ramondevprivate.common.fleet_unreached(ansible_play_hosts_all | difference(ansible_play_hosts),
+                                            now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ')) }}
+
+    - name: render | Store snapshots of unreached hosts with the marker
+      ansible.builtin.copy:
+        content: "{{ __fleet_inventory_stored_host | to_nice_json }}\n"
+        dest: "{{ fleet_inventory_data_dir }}/{{ __fleet_inventory_stored_host.host }}.json"
+        mode: "0600"
+      loop: "{{ __fleet_inventory_unreached }}"
+      loop_control:
+        loop_var: __fleet_inventory_stored_host
+        label: "{{ __fleet_inventory_stored_host.host }}"
+
+    - name: render | Store snapshots of reached hosts
+      ansible.builtin.copy:
+        content: "{{ hostvars[__fleet_inventory_host].__fleet_inventory_snapshot | to_nice_json }}\n"
+        dest: "{{ fleet_inventory_data_dir }}/{{ __fleet_inventory_host }}.json"
+        mode: "0600"
+      loop: "{{ ansible_play_hosts }}"
+      loop_control:
+        loop_var: __fleet_inventory_host
+
+    - name: render | Build report from current and stored snapshots
+      ansible.builtin.set_fact:
+        __fleet_inventory_report: >-
+          {{ __fleet_inventory_current
+             | ramondevprivate.common.fleet_report(__fleet_inventory_stored_snapshots, __fleet_inventory_unreachable,
+                                         __fleet_inventory_report_options) }}
+      vars:
+        __fleet_inventory_current: >-
+          {{ ansible_play_hosts | map('extract', hostvars, '__fleet_inventory_snapshot') | list }}
+        __fleet_inventory_unreachable: "{{ ansible_play_hosts_all | difference(ansible_play_hosts) }}"
+        # converted explicitly: argument validation checks types but values from -e stay strings
+        __fleet_inventory_report_options:
+          inactive_days: "{{ fleet_inventory_inactive_days | int }}"
+          stopped_containers: "{{ fleet_inventory_stopped_containers | bool }}"
+          update_max_age_days: "{{ fleet_inventory_update_max_age_days | int }}"
+
+    # Only hosts of this run: a page outside --limit stays as it is
+    - name: render | Render server pages
+      ansible.builtin.template:
+        src: server.md.j2
+        dest: "{{ fleet_inventory_output_dir }}/Servers/{{ __fleet_inventory_page.host }}.md"
+        mode: "0644"
+      loop: "{{ __fleet_inventory_report.hosts | selectattr('host', 'in', ansible_play_hosts_all) | list }}"
+      loop_control:
+        loop_var: __fleet_inventory_page
+        label: "{{ __fleet_inventory_page.host }}"
+
+    - name: render | Render overview
+      ansible.builtin.template:
+        src: overview.md.j2
+        dest: "{{ fleet_inventory_output_dir }}/Overview.md"
+        mode: "0644"
+
+    - name: render | Render server list
+      ansible.builtin.template:
+        src: server_list.md.j2
+        dest: "{{ fleet_inventory_output_dir }}/Server List.md"
+        mode: "0644"

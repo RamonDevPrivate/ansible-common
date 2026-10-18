@@ -1,0 +1,6 @@
+Matching Defaults entries for ops on host-a:
+    env_reset
+
+User ops may run the following commands on host-a:
+    (root) NOPASSWD: /usr/bin/apt update
+    (ALL) NOPASSWD: ALL

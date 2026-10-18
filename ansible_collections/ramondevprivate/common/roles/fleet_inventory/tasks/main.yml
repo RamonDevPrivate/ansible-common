@@ -1,0 +1,19 @@
+---
+# Rendering needs every host's snapshot in one batch; with serial it would fail later with a cryptic error
+- name: Check that all hosts run in one batch
+  ansible.builtin.assert:
+    that: ansible_play_batch | length == ansible_play_hosts | length
+    fail_msg: >-
+      fleet_inventory needs all hosts of the play in one batch: remove `serial` from the play
+      (the pages are rendered once, after every host was collected)
+    quiet: true
+  run_once: true
+
+- name: Collect facts on each host
+  ansible.builtin.import_tasks: collect.yml
+
+- name: Probe public addresses from outside
+  ansible.builtin.import_tasks: probe.yml
+
+- name: Render pages on the controller
+  ansible.builtin.import_tasks: render.yml

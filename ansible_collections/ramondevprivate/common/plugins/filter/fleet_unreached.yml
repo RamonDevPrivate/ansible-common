@@ -1,0 +1,42 @@
+---
+DOCUMENTATION:
+  name: fleet_unreached
+  short_description: Mark the stored snapshots of hosts a run could not collect
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - Returns the stored snapshots of the given hosts with C(unreached_since) set to O(timestamp), or kept if an
+      earlier run already set it. Everything else in a snapshot stays as stored.
+    - Written back to the data directory, the marker survives runs that don't target the host (C(--limit)); the next
+      successful collection replaces the snapshot and so removes it.
+    - Hosts without a stored snapshot are not returned.
+  positional: unreachable, timestamp
+  options:
+    _input:
+      description: Snapshots read from the data directory.
+      type: list
+      elements: dict
+      required: true
+    unreachable:
+      description: Hosts targeted in this run whose snapshot could not be collected.
+      type: list
+      elements: str
+      required: true
+    timestamp:
+      description: Time of this run as ISO 8601 string.
+      type: str
+      required: true
+
+EXAMPLES: |
+  - name: Mark unreached hosts
+    ansible.builtin.set_fact:
+      unreached: >-
+        {{ stored | ramondevprivate.common.fleet_unreached(ansible_play_hosts_all | difference(ansible_play_hosts),
+                                                 now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ')) }}
+
+RETURN:
+  _value:
+    description: The marked snapshots, as stored plus C(unreached_since).
+    type: list
+    elements: dict

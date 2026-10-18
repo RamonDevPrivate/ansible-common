@@ -1,0 +1,8 @@
+ssh-rsa AAAAB3NzaC1yc2EAAAAgAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA= Doe, Jane, jane@example.org
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh alice@example.org
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEi bob-it.example
+# a comment line
+
+from="10.0.0.0/8,192.0.2.1",command="/usr/bin/borg serve --restrict-to-path /srv",no-pty ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIj backup@example.org
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMk
+ssh-ed25519 not-base64!! broken@example.org

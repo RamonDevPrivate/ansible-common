@@ -1,0 +1,438 @@
+---
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_call:
+    inputs:
+      cache:
+        description: Use the uv cache. The release passes false, so nothing from a cache gets into a release run.
+        type: boolean
+        default: true
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions: {}
+
+jobs:
+  lint:
+    name: Lint, format and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: ${{ inputs.cache != false }} # inputs.cache is only set under workflow_call
+      - name: Install dependencies
+        run: uv sync --locked --group docs
+      - name: Ruff
+        run: |
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+      - name: basedpyright
+        run: uv run --locked basedpyright
+      - name: yamllint
+        run: uv run --locked yamllint .
+      - name: ansible-lint
+        run: uv run --locked ansible-lint
+      - name: shellcheck
+        run: |
+          targets=ansible_collections/ramondevprivate/common/tests/integration/targets
+          shellcheck "$targets"/*/runme.sh "$targets"/*/bin/* .githooks/*
+      - name: Collection docs lint (antsibull-docs)
+        working-directory: ansible_collections/ramondevprivate/common
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}
+        run: |
+          uv run --locked --group docs antsibull-docs lint-collection-docs \
+            --plugin-docs --validate-collection-refs all --disallow-unknown-collection-refs .
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: ${{ inputs.cache != false }} # inputs.cache is only set under workflow_call
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: pytest
+        run: uv run --locked pytest --cov --cov-report=html:coverage
+      - name: Write coverage summary
+        if: always()
+        run: |
+          if [ ! -f .coverage ]; then
+            {
+              echo "## 🧪 Coverage"
+              echo ""
+              echo "⚠️ No coverage data was written — check the test step's logs above."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "## 🧪 Coverage"
+            echo ""
+            uv run --locked coverage report --format=markdown
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
+  ansible-test:
+    name: ansible-test ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [sanity, units, integration]
+    defaults:
+      run:
+        # ansible-test only runs inside ansible_collections/<namespace>/<name>
+        working-directory: ansible_collections/ramondevprivate/common
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: ${{ inputs.cache != false }} # inputs.cache is only set under workflow_call
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Run ansible-test in its default container
+        env:
+          TEST: ${{ matrix.test }}
+        run: uv run --locked ansible-test "$TEST" --docker --color -v
+
+  package:
+    name: Package checks
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    timeout-minutes: 15
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: ${{ inputs.cache != false }} # inputs.cache is only set under workflow_call
+      - name: Install dependencies
+        run: uv sync --locked --group docs
+      - name: Build the collection
+        run: |
+          uv run --locked ansible-galaxy collection build ansible_collections/ramondevprivate/common \
+            --output-path "$RUNNER_TEMP/dist"
+      - name: Check the tarball contents
+        run: |
+          if tar -tzf "$RUNNER_TEMP"/dist/*.tar.gz \
+            | grep -E '(^|/)(tests/output|__pycache__|\.venv|\.pytest_cache|\.ruff_cache)(/|$)|\.pyc$'; then
+            echo "::error::build artifacts or caches in the collection tarball (build_ignore in galaxy.yml)"
+            exit 1
+          fi
+      - name: Install the tarball and read every plugin's docs
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ runner.temp }}/collections
+          ANSIBLE: ${{ github.workspace }}/.venv/bin
+        # outside the checkout, so the repo's ansible.cfg doesn't point at the source tree
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          "$ANSIBLE/ansible-galaxy" collection install dist/*.tar.gz -p "$ANSIBLE_COLLECTIONS_PATH"
+          checked=0
+          for type in module filter lookup role; do
+            names=$("$ANSIBLE/ansible-doc" -t "$type" -l -j ramondevprivate.common | jq -r 'keys[]')
+            for name in $names; do
+              echo "ansible-doc -t $type $name"
+              "$ANSIBLE/ansible-doc" -t "$type" "$name" > /dev/null
+              checked=$((checked + 1))
+            done
+          done
+          if [ "$checked" -eq 0 ]; then
+            echo "::error::the installed collection lists no plugins or roles"
+            exit 1
+          fi
+      - name: Build the HTML docs (deployed by the release)
+        run: uv run --locked --group docs docs/build.sh
+
+  supply-chain:
+    name: Supply chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: ${{ inputs.cache != false }} # inputs.cache is only set under workflow_call
+      - name: Lockfile matches pyproject.toml
+        run: uv lock --check
+      - name: Lockfile only uses PyPI, with hashes
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import tomllib
+
+          with open("uv.lock", "rb") as lockfile:
+              lock = tomllib.load(lockfile)
+          bad = []
+          for pkg in lock["package"]:
+              source = pkg.get("source", {})
+              if source == {"virtual": "."}:  # this repo itself
+                  continue
+              files = [*pkg.get("wheels", []), *([pkg["sdist"]] if "sdist" in pkg else [])]
+              hashed = bool(files) and all(f.get("hash") for f in files)
+              if source != {"registry": "https://pypi.org/simple"} or not hashed:
+                  bad.append(pkg["name"])
+          if bad:
+              print(f"::error::packages not from PyPI or without hashes: {', '.join(bad)}")
+              sys.exit(1)
+          print(f"{len(lock['package'])} packages, all from PyPI with hashes")
+          EOF
+
+  security:
+    name: Vulnerability and secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+      security-events: write # required for uploading results to code scanning
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # required for gitleaks to scan the history
+          persist-credentials: false
+      - name: Trivy scan (advisory, findings go to the security tab and the summary)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_INCLUDE_DEV_DEPS: "true" # every locked package is in a dependency group; trivy skips those otherwise
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          format: sarif
+          output: trivy-results.sarif
+          severity: "CRITICAL,HIGH"
+          limit-severities-for-sarif: true # trivy-action ignores severity for SARIF otherwise
+          exit-code: "0"
+          ignore-unfixed: true
+          cache: false # this job also runs inside the release workflow
+      - name: Upload trivy report to security tab
+        if: >-
+          always() && github.event.repository.visibility == 'public'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          && github.actor != 'dependabot[bot]'
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-fs
+      - name: Run gitleaks (docker)
+        run: |
+          docker run --rm --network none \
+            -v "${PWD}:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks:v8.30.0@sha256:691af3c7c5a48b16f187ce3446d5f194838f91238f27270ed36eef6359a574d9 \
+            git --redact --report-format sarif --report-path gitleaks.sarif .
+      - name: Upload gitleaks report to security tab
+        if: >-
+          always() && github.event.repository.visibility == 'public'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          && github.actor != 'dependabot[bot]'
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scan-results-${{ github.sha }}
+          path: |
+            trivy-results.sarif
+            gitleaks.sarif
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Write step summary from SARIF
+        if: always()
+        run: |
+          if [ ! -f trivy-results.sarif ]; then
+            {
+              echo "## 🔍 Trivy Scan Summary"
+              echo ""
+              echo "⚠️ \`trivy-results.sarif\` was not found — check the scan step's logs above."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          total=$(jq '[.runs[0].results[]] | length' trivy-results.sarif)
+          {
+            echo "## 🔍 Trivy Scan Summary"
+            echo ""
+
+            if [ "$total" -eq 0 ]; then
+              echo "✅ No issues found."
+            else
+              echo "**Total findings: $total**"
+              echo ""
+              echo "| Severity | Count |"
+              echo "|---|---|"
+              jq -r '
+                (.runs[0].tool.driver.rules // []) as $rules |
+                .runs[0].results[] as $r |
+                ($rules[] | select(.id == $r.ruleId)
+                  | (.properties.tags[] | select(IN("CRITICAL","HIGH","MEDIUM","LOW","UNKNOWN")))) as $sev |
+                $sev
+              ' trivy-results.sarif | sort | uniq -c | sort -rn | while read -r count sev; do
+                [ -z "$sev" ] && continue
+                echo "| $sev | $count |"
+              done
+              echo ""
+
+              echo "<details>"
+              echo "<summary>Show all findings</summary>"
+              echo ""
+              echo "| Severity | Rule | File | Detail |"
+              echo "|---|---|---|---|"
+              jq -r '
+                (.runs[0].tool.driver.rules // []) as $rules |
+                .runs[0].results[] |
+                . as $r |
+                ($rules[] | select(.id == $r.ruleId)
+                  | (.properties.tags[] | select(IN("CRITICAL","HIGH","MEDIUM","LOW","UNKNOWN")))) as $sev |
+                [
+                  $sev,
+                  $r.ruleId,
+                  ($r.locations[0].physicalLocation.artifactLocation.uri // "unknown"),
+                  ($r.message.text // "" | gsub("\n"; " ") | .[0:90])
+                ] | @tsv
+              ' trivy-results.sarif | while IFS=$'\t' read -r sev rule file detail; do
+                echo "| $sev | $rule | $file | $detail |"
+              done
+              echo ""
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sast:
+    name: SAST scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    timeout-minutes: 20
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+      security-events: write # required for uploading results to code scanning
+    container:
+      image: semgrep/semgrep@sha256:06938c1f365d3f67b8cedd8bc117607ae64253f88a0e768e9da9408548927dd6 # 1.167.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run Semgrep
+        run: |
+          set -o pipefail
+          semgrep scan \
+          --metrics=off \
+          --config p/security-audit \
+          --config p/secrets \
+          --config p/python \
+          --severity ERROR \
+          --error \
+          --sarif \
+          --output semgrep.sarif
+      - name: Print Semgrep results
+        if: failure()
+        run: |
+          if [ -f semgrep.sarif ]; then
+            echo "=== Semgrep blocking findings ==="
+            jq -r '
+              .runs[].results[]
+              | .locations[0].physicalLocation as $loc
+              | "\(.ruleId) | \($loc.artifactLocation.uri):\($loc.region.startLine) | \(.message.text)"
+            ' semgrep.sarif
+          else
+            echo "No semgrep.sarif found"
+          fi
+      - name: Upload Semgrep results to Github Security tab
+        if: >-
+          always() && github.event.repository.visibility == 'public'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          && github.actor != 'dependabot[bot]'
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: semgrep.sarif
+          category: sast
+      - name: Upload SARIF
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >-
+      github.event.repository.visibility == 'public'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      && github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read # required for actions/checkout to fetch repo contents if this repo is private
+      security-events: write # required for uploading results to code scanning
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          languages: python
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+      - name: Analyze
+        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          category: "/language:python"

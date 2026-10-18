@@ -1,0 +1,168 @@
+{
+  "br_000000000001": {
+    "active": true,
+    "device": "br-000000000001",
+    "ipv4": {
+      "address": "172.18.0.1",
+      "broadcast": "172.18.255.255",
+      "netmask": "255.255.0.0",
+      "network": "172.18.0.0",
+      "prefix": "16"
+    },
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:201",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "bridge"
+  },
+  "br_000000000002": {
+    "active": true,
+    "device": "br-000000000002",
+    "ipv4": {
+      "address": "172.19.0.1",
+      "broadcast": "172.19.255.255",
+      "netmask": "255.255.0.0",
+      "network": "172.19.0.0",
+      "prefix": "16"
+    },
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:202",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "bridge"
+  },
+  "distribution": "Debian",
+  "distribution_major_version": "12",
+  "distribution_release": "bookworm",
+  "distribution_version": "12.15",
+  "docker0": {
+    "active": false,
+    "device": "docker0",
+    "ipv4": {
+      "address": "172.17.0.1",
+      "broadcast": "172.17.255.255",
+      "netmask": "255.255.0.0",
+      "network": "172.17.0.0",
+      "prefix": "16"
+    },
+    "type": "bridge"
+  },
+  "domain": "example.org",
+  "ens192": {
+    "active": true,
+    "device": "ens192",
+    "ipv4": {
+      "address": "203.0.113.54",
+      "broadcast": "203.0.113.255",
+      "netmask": "255.255.255.0",
+      "network": "203.0.113.0",
+      "prefix": "24"
+    },
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:2",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "ether"
+  },
+  "fqdn": "host-b.example.org",
+  "hostname": "host-b",
+  "interfaces": [
+    "veth0000001",
+    "veth0000002",
+    "veth0000003",
+    "docker0",
+    "br-000000000001",
+    "veth0000004",
+    "br-000000000002",
+    "ens192",
+    "lo"
+  ],
+  "kernel": "6.1.0-39-amd64",
+  "lo": {
+    "active": true,
+    "device": "lo",
+    "ipv4": {
+      "address": "127.0.0.1",
+      "broadcast": "",
+      "netmask": "255.0.0.0",
+      "network": "127.0.0.0",
+      "prefix": "8"
+    },
+    "ipv6": [
+      {
+        "address": "::1",
+        "prefix": "128",
+        "scope": "host"
+      }
+    ],
+    "type": "loopback"
+  },
+  "memtotal_mb": 7941,
+  "mounts": [
+    {
+      "device": "/dev/vda1",
+      "fstype": "ext4",
+      "mount": "/",
+      "options": "rw,relatime,errors=remount-ro",
+      "size_total": 526284808192
+    }
+  ],
+  "processor_vcpus": 2,
+  "veth0000002": {
+    "active": true,
+    "device": "veth0000002",
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:102",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "ether"
+  },
+  "veth0000003": {
+    "active": true,
+    "device": "veth0000003",
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:103",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "ether"
+  },
+  "veth0000001": {
+    "active": true,
+    "device": "veth0000001",
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:101",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "ether"
+  },
+  "veth0000004": {
+    "active": true,
+    "device": "veth0000004",
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:104",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "ether"
+  }
+}

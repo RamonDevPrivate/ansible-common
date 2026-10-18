@@ -1,0 +1,75 @@
+---
+# Runs once, after collection: ping the public addresses of all reached hosts from the probe host and add the
+# exposure to their snapshots. Ping changes nothing, so it also runs in check mode. A broken probe never fails the
+# run: hosts that could not be probed keep the exposure of their stored snapshot.
+- name: probe | The probe host needs its SSH user
+  ansible.builtin.assert:
+    that: fleet_inventory_probe_user | length > 0
+    fail_msg: Set fleet_inventory_probe_user together with fleet_inventory_probe_host
+    quiet: true
+  run_once: true
+  when: fleet_inventory_probe_host | length > 0
+
+# Delegating to a host that is not in the inventory keeps it out of the play (add_host would add it to
+# ansible_play_hosts). User, port and key are task variables, so they win over the inventory's [all:vars]. An empty
+# key adds no IdentityFile (ssh connection plugin), so SSH falls back to its defaults.
+- name: probe | Ping public addresses from the probe host
+  ansible.builtin.command:
+    argv:
+      - ping
+      - "{{ '-6' if __fleet_inventory_target.family == 'ipv6' else '-4' }}"
+      - -c
+      - "1"
+      - -W
+      - "2"
+      - -n
+      - -q
+      - "{{ __fleet_inventory_target.address }}"
+  # Without a probe host the loop is empty: delegate_to is templated per item before `when`, so an empty host
+  # name would fail every item.
+  loop: >-
+    {{ ansible_play_hosts | map('extract', hostvars, '__fleet_inventory_snapshot') | ramondevprivate.common.fleet_probe_targets
+       if fleet_inventory_probe_host | length > 0 else [] }}
+  loop_control:
+    loop_var: __fleet_inventory_target
+    label: "{{ __fleet_inventory_target.host }} {{ __fleet_inventory_target.address }}"
+  delegate_to: "{{ fleet_inventory_probe_host }}"
+  vars:
+    ansible_user: "{{ fleet_inventory_probe_user }}"
+    ansible_port: "{{ fleet_inventory_probe_port }}"
+    ansible_ssh_private_key_file: "{{ fleet_inventory_probe_key }}"
+    ansible_ssh_extra_args: "{{ '-o IdentitiesOnly=yes' if fleet_inventory_probe_key | length > 0 else '' }}"
+  run_once: true
+  become: false
+  check_mode: false
+  changed_when: false
+  failed_when: false  # rc 1 = no answer, that's a result
+  ignore_unreachable: true  # an unreachable probe host must not take the first server out of the play
+  # controller-side connection errors (e.g. no ssh client) bypass failed_when
+  ignore_errors: true
+  register: __fleet_inventory_pings
+
+- name: probe | Show pings that could not be sent
+  ansible.builtin.debug:
+    msg: "Not probed, the hosts keep their stored exposure: {{ __fleet_inventory_ping_errors | join('; ') }}"
+  run_once: true
+  vars:
+    __fleet_inventory_ping_errors: >-
+      {{ __fleet_inventory_pings.results | default([]) | ramondevprivate.common.fleet_probe_errors }}
+  when: __fleet_inventory_ping_errors | length > 0
+
+- name: probe | Exposure per host
+  ansible.builtin.set_fact:
+    __fleet_inventory_exposures: >-
+      {{ __fleet_inventory_current | ramondevprivate.common.fleet_exposure(__fleet_inventory_pings.results | default([]),
+                                                                          __fleet_inventory_stored_snapshots) }}
+  run_once: true
+  vars:
+    __fleet_inventory_current: >-
+      {{ ansible_play_hosts | map('extract', hostvars, '__fleet_inventory_snapshot') | list }}
+
+- name: probe | Add exposure to the snapshot
+  ansible.builtin.set_fact:
+    __fleet_inventory_snapshot: >-
+      {{ __fleet_inventory_snapshot | combine({'exposure': __fleet_inventory_exposures[inventory_hostname]}) }}
+  when: inventory_hostname in __fleet_inventory_exposures

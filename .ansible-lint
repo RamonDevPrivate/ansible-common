@@ -1,0 +1,25 @@
+---
+profile: production
+
+exclude_paths:
+  - .venv/
+  - ansible_collections/ramondevprivate/common/tests/output/
+
+enable_list:
+  - empty-string-compare
+  - no-log-password
+  - no-same-owner
+  - name[prefix]
+  - galaxy-version-incorrect
+  - no-prompting
+  - jinja-template-extension
+  - role-argument-spec
+  - yaml
+
+loop_var_prefix: "^(__|{role}_)"
+var_naming_pattern: "^[a-z_][a-z0-9_]*$"
+offline: true
+# ansible-lint 26.9.0 only knows ansible-core 2.15-2.19 (meta-runtime[unsupported-version] on requires_ansible);
+# remove once ansible-lint lists 2.21 itself
+supported_ansible_also:
+  - "2.21"

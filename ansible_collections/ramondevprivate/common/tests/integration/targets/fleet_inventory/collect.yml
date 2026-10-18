@@ -1,0 +1,10 @@
+---
+- name: Run the whole role against the controller itself
+  hosts: testhost
+  gather_facts: false
+  roles:
+    - role: ramondevprivate.common.fleet_inventory
+      vars:
+        fleet_inventory_data_dir: "{{ fleet_test_dir }}/live/data"
+        fleet_inventory_output_dir: "{{ fleet_test_dir }}/live/vault"
+        fleet_inventory_mermaid_charts: false  # explicit, so changing the default doesn't affect this check

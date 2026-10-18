@@ -1,0 +1,27 @@
+---
+DOCUMENTATION:
+  name: fleet_probe_errors
+  short_description: Pings of the probe that could not be sent
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - Lists the pings that neither got an answer nor a clean "no answer", e.g. because the probe host was unreachable,
+      C(ping) or Python is missing there, or it has no IPv6 route. Those hosts keep their stored exposure.
+  options:
+    _input:
+      description: The registered C(results) of the ping loop.
+      type: list
+      elements: dict
+      required: true
+
+EXAMPLES: |
+  - name: Show pings that could not be sent
+    ansible.builtin.debug:
+      msg: "{{ pings.results | ramondevprivate.common.fleet_probe_errors }}"
+
+RETURN:
+  _value:
+    description: "One C(address (host): reason) string per failed ping."
+    type: list
+    elements: str

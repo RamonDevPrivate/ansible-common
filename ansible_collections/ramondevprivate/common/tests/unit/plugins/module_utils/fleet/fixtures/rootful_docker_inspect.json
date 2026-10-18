@@ -1,0 +1,174 @@
+[
+  {
+    "Id": "19b6ce09f56356046033a788451af0d8e26c7b704c1d9fa981462c76d845ade4",
+    "Name": "/hedgedoc-app-1",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "quay.io/hedgedoc/hedgedoc:1.10.7-alpine",
+      "Labels": {
+        "com.docker.compose.project": "hedgedoc",
+        "com.docker.compose.project.config_files": "/home/user/hedgedoc/compose.yml",
+        "com.docker.compose.project.working_dir": "/home/user/hedgedoc",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "hedgedoc_hedgedoc-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "3000/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "volume",
+        "Name": "hedgedoc_uploads",
+        "Source": "/var/lib/docker/volumes/hedgedoc_uploads/_data",
+        "Destination": "/hedgedoc/public/uploads",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/etc/ssl/certs/ca-certificates.crt",
+        "Destination": "/etc/ssl/certs/ca-certificates.crt",
+        "Mode": "ro",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "9d66247b05a633f4d4f85954d2bdce66050927188e9fd27b2f93f7e42a8d9063",
+    "Name": "/hedgedoc-database-1",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "postgres:18-alpine",
+      "Labels": {
+        "com.docker.compose.project": "hedgedoc",
+        "com.docker.compose.project.config_files": "/home/user/hedgedoc/compose.yml",
+        "com.docker.compose.project.working_dir": "/home/user/hedgedoc"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "hedgedoc_hedgedoc-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "5432/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "volume",
+        "Name": "acbf2fabe4b170cea6043526a39d320f0068f462aa8380f8d2b1643187545eeb",
+        "Source": "/var/lib/docker/volumes/acbf2fabe4b170cea6043526a39d320f0068f462aa8380f8d2b1643187545eeb/_data",
+        "Destination": "/var/lib/postgresql",
+        "Mode": "",
+        "RW": true
+      },
+      {
+        "Type": "volume",
+        "Name": "hedgedoc_database",
+        "Source": "/var/lib/docker/volumes/hedgedoc_database/_data",
+        "Destination": "/var/lib/postgresql/data",
+        "Mode": "rw",
+        "RW": true
+      }
+    ]
+  },
+  {
+    "Id": "157afa3b1c06e6565a02e69fe1e1eb34d1baa17e13d0dd2e31cd3b08f8111e32",
+    "Name": "/traefik-traefik-1",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "traefik:v3",
+      "Labels": {
+        "com.docker.compose.project": "traefik",
+        "com.docker.compose.project.config_files": "/home/user/traefik/compose.yml",
+        "com.docker.compose.project.working_dir": "/home/user/traefik",
+        "org.opencontainers.image.version": "v3.6.11",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik-public",
+      "PortBindings": {
+        "443/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "443"
+          }
+        ],
+        "80/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "80"
+          }
+        ]
+      }
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "443/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "443"
+          },
+          {
+            "HostIp": "::",
+            "HostPort": "443"
+          }
+        ],
+        "80/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "80"
+          },
+          {
+            "HostIp": "::",
+            "HostPort": "80"
+          }
+        ]
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/certificates",
+        "Destination": "/certificates",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/home/user/traefik/logs",
+        "Destination": "/logs",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/home/user/traefik/config",
+        "Destination": "/config",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/var/run/docker.sock",
+        "Destination": "/var/run/docker.sock",
+        "Mode": "ro",
+        "RW": false
+      }
+    ]
+  }
+]

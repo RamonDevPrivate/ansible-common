@@ -1,0 +1,70 @@
+{
+  "distribution": "Debian",
+  "distribution_major_version": "13",
+  "distribution_release": "trixie",
+  "distribution_version": "13.7",
+  "domain": "",
+  "eth0": {
+    "active": true,
+    "device": "eth0",
+    "ipv4": {
+      "address": "203.0.113.23",
+      "broadcast": "",
+      "netmask": "255.255.255.0",
+      "network": "203.0.113.0",
+      "prefix": "24"
+    },
+    "ipv6": [
+      {
+        "address": "fe80::ff:fe00:1",
+        "prefix": "64",
+        "scope": "link"
+      }
+    ],
+    "type": "ether"
+  },
+  "fqdn": "host-a",
+  "hostname": "host-a",
+  "interfaces": [
+    "lo",
+    "eth0"
+  ],
+  "kernel": "6.12.107+deb13-amd64",
+  "lo": {
+    "active": true,
+    "device": "lo",
+    "ipv4": {
+      "address": "127.0.0.1",
+      "broadcast": "",
+      "netmask": "255.0.0.0",
+      "network": "127.0.0.0",
+      "prefix": "8"
+    },
+    "ipv6": [
+      {
+        "address": "::1",
+        "prefix": "128",
+        "scope": "host"
+      }
+    ],
+    "type": "loopback"
+  },
+  "memtotal_mb": 32101,
+  "mounts": [
+    {
+      "device": "/dev/vda1",
+      "fstype": "ext4",
+      "mount": "/",
+      "options": "rw,relatime,discard,errors=remount-ro",
+      "size_total": 528223088640
+    },
+    {
+      "device": "/dev/vda15",
+      "fstype": "vfat",
+      "mount": "/boot/efi",
+      "options": "rw,relatime,fmask=0077,dmask=0077,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro",
+      "size_total": 129718272
+    }
+  ],
+  "processor_vcpus": 10
+}

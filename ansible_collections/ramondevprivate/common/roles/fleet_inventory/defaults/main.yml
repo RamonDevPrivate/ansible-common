@@ -1,0 +1,23 @@
+---
+fleet_inventory_mermaid_charts: true
+fleet_inventory_descriptions_dir: Descriptions
+fleet_inventory_group_filter:
+  - cdrom
+  - floppy
+  - audio
+  - dip
+  - video
+  - plugdev
+  - users
+  - netdev
+  - bluetooth
+fleet_inventory_inactive_days: 365
+fleet_inventory_stopped_containers: true
+fleet_inventory_update_max_age_days: 7
+fleet_inventory_probe_host: ""
+fleet_inventory_probe_user: ""
+fleet_inventory_probe_key: ""
+fleet_inventory_probe_port: 22
+fleet_inventory_user_filter:
+  - root
+  - debian

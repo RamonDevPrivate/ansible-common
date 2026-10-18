@@ -1,0 +1,73 @@
+---
+argument_specs:
+  main:
+    short_description: Document Debian servers as Markdown for Obsidian
+    description:
+      - Collects read-only facts from each host, stores one JSON snapshot per host on the controller and renders a
+        page per host, an overview and a server list.
+      - Hosts that are targeted but not collected keep their last snapshot and are shown as not updated.
+    options:
+      fleet_inventory_output_dir:
+        description: Vault folder for C(Overview.md), C(Server List.md) and C(Servers/).
+        type: path
+        required: true
+      fleet_inventory_data_dir:
+        description: Controller folder for the JSON snapshots. Keep it outside the vault.
+        type: path
+        required: true
+      fleet_inventory_mermaid_charts:
+        description: Bar charts for cores, RAM and disk in the overview.
+        type: bool
+        default: true
+      fleet_inventory_descriptions_dir:
+        description:
+          - Folder in O(fleet_inventory_output_dir) for your own note per server, embedded in its page. The role only
+            creates missing notes.
+          - Empty switches descriptions off.
+        type: str
+        default: Descriptions
+      fleet_inventory_group_filter:
+        description:
+          - Supplementary groups not shown for users.
+          - Never list privilege groups like C(sudo), C(docker), C(lxd) or C(adm).
+        type: list
+        elements: str
+        default: [cdrom, floppy, audio, dip, video, plugdev, users, netdev, bluetooth]
+      fleet_inventory_user_filter:
+        description: Accounts not collected at all. Filtering C(root) hides who can log in as root.
+        type: list
+        elements: str
+        default: [root, debian]
+      fleet_inventory_inactive_days:
+        description: A last login older than this many days (at collection time) marks a user inactive.
+        type: int
+        default: 365
+      fleet_inventory_stopped_containers:
+        description: List containers that are not running. Decided at render time; they are always collected.
+        type: bool
+        default: true
+      fleet_inventory_update_max_age_days:
+        description: Auto-updates without a successful run for this many days (at collection time) need attention.
+        type: int
+        default: 7
+      fleet_inventory_probe_host:
+        description:
+          - Host that pings the public addresses (SSH host name or alias); it doesn't have to be in the inventory and
+            needs C(ping) and Python, no sudo.
+          - Empty means no probe; hosts keep their stored exposure.
+        type: str
+        default: ""
+      fleet_inventory_probe_user:
+        description: SSH user on the probe host; required with O(fleet_inventory_probe_host).
+        type: str
+        default: ""
+      fleet_inventory_probe_key:
+        description:
+          - SSH key for the probe host (private key, or the public key of an agent key); only this key is offered.
+          - Empty means the usual SSH defaults.
+        type: path
+        default: ""
+      fleet_inventory_probe_port:
+        description: SSH port of the probe host; always passed, so a C(Port) in C(~/.ssh/config) doesn't apply.
+        type: int
+        default: 22

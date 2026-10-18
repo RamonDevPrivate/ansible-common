@@ -1,0 +1,9 @@
+---
+name: CodeQL config
+
+queries:
+  - uses: security-extended
+
+paths-ignore:
+  - .venv
+  - ansible_collections/ramondevprivate/common/tests/output

@@ -1,0 +1,5 @@
+---
+# Stored snapshots of all hosts, read on the controller (render delegates to localhost, so it is the same
+# filesystem). The lookup expands `~`, gives [] while the data dir doesn't exist yet (first run, also in check mode),
+# and names a file that isn't valid JSON instead of failing with an anonymous decode error.
+__fleet_inventory_stored_snapshots: "{{ query('ramondevprivate.common.fleet_snapshots', fleet_inventory_data_dir) }}"

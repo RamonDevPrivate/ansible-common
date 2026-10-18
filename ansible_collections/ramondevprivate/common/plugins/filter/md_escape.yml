@@ -1,0 +1,29 @@
+---
+DOCUMENTATION:
+  name: md_escape
+  short_description: Make a value safe to print in Obsidian Markdown
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - Turns a value into plain text for a Markdown line or table cell, so values set by users or third parties (key
+      comments, image labels, UFW comments, process names) can't change the page.
+    - Control and format characters, including line breaks, become spaces.
+    - C(\), C(|), C(`), C([), C(]), C(#), C($), C(*), C(_), C(~), C(=) and C(^) are escaped with a backslash;
+      C(<), C(>), C(%) and C(&) become HTML entities (no raw HTML, no C(%%) comments, no formatting, no block IDs).
+    - The page source shows the backslashes; Obsidian renders the plain characters.
+  options:
+    _input:
+      description: The value; C(None) gives an empty string, anything else is converted to a string.
+      type: raw
+      required: true
+
+EXAMPLES: |
+  - name: A table cell
+    ansible.builtin.debug:
+      msg: "| {{ key_comment | ramondevprivate.common.md_escape }} |"
+
+RETURN:
+  _value:
+    description: The escaped text.
+    type: str

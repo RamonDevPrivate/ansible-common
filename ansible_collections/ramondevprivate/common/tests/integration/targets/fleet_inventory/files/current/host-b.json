@@ -1,0 +1,320 @@
+{
+    "schema_version": 1,
+    "host": "host-b",
+    "collected_at": "2026-10-09T13:09:00Z",
+    "system": {
+        "distribution": "Debian",
+        "version": "12.12",
+        "release": "bookworm",
+        "kernel": "6.1.0-40-amd64",
+        "cores": 4,
+        "ram_mb": 7944,
+        "disk": {
+            "total_bytes": 139586437120,
+            "mounts": [
+                {
+                    "mount": "/",
+                    "device": "/dev/vda1",
+                    "fstype": "ext4",
+                    "size_bytes": 32212254720
+                },
+                {
+                    "mount": "/srv/odd|name",
+                    "device": "/dev/vdb1",
+                    "fstype": "xfs",
+                    "size_bytes": 107374182400
+                }
+            ]
+        }
+    },
+    "addresses": [
+        {
+            "interface": "ens18",
+            "address": "198.51.100.42",
+            "prefix": 24,
+            "family": "ipv4",
+            "private": false
+        },
+        {
+            "interface": "ens19",
+            "address": "10.10.0.42",
+            "prefix": 16,
+            "family": "ipv4",
+            "private": true
+        },
+        {
+            "interface": "ens18",
+            "address": "2001:db8:42::42",
+            "prefix": 64,
+            "family": "ipv6",
+            "private": false
+        }
+    ],
+    "users": [
+        {
+            "name": "user",
+            "uid": 1000,
+            "groups": [
+                "sudo"
+            ],
+            "sudo": {
+                "level": "full",
+                "nopasswd": true,
+                "rules": [
+                    "(ALL) NOPASSWD: ALL"
+                ]
+            },
+            "authorized_keys": [
+                {
+                    "key_type": "ssh-ed25519",
+                    "comment": "Doe, Jane | ops",
+                    "fingerprint": "SHA256:jane",
+                    "allowed_from": "",
+                    "forced_command": false
+                },
+                {
+                    "key_type": "ssh-ed25519",
+                    "comment": "%% hidden <img src=\"https://example.invalid/t.png\"> [[Overview]] **b** a_b ~~c~~ ==d== ^e &amp;\nsecond | line",
+                    "fingerprint": "SHA256:alice",
+                    "allowed_from": "",
+                    "forced_command": false
+                }
+            ],
+            "last_login": "2024-01-15T09:00:00+01:00"
+        },
+        {
+            "name": "bob",
+            "uid": 1001,
+            "groups": [],
+            "sudo": {
+                "level": "none",
+                "nopasswd": false,
+                "rules": []
+            },
+            "authorized_keys": null,
+            "last_login": null
+        }
+    ],
+    "ssh": {
+        "key_files": [
+            ".ssh/authorized_keys"
+        ],
+        "key_files_source": "default",
+        "keys_command": true
+    },
+    "ufw": {
+        "state": "active",
+        "logging": "on (low)",
+        "default_incoming": "deny",
+        "default_outgoing": "allow",
+        "default_routed": "disabled",
+        "rules": [
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "80",
+                "to_address": "0.0.0.0/0",
+                "from_port": "any",
+                "from_address": "0.0.0.0/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "multi\nline",
+                "family": "ipv4"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "80",
+                "to_address": "::/0",
+                "from_port": "any",
+                "from_address": "::/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "",
+                "family": "ipv6"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "22",
+                "to_address": "0.0.0.0/0",
+                "from_port": "any",
+                "from_address": "0.0.0.0/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "",
+                "family": "ipv4"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "22",
+                "to_address": "::/0",
+                "from_port": "any",
+                "from_address": "::/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "",
+                "family": "ipv6"
+            }
+        ]
+    },
+    "listeners": [
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 22,
+            "processes": [
+                "sshd"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "::",
+            "interface": "",
+            "port": 22,
+            "processes": [
+                "sshd"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 2222,
+            "processes": [
+                "sshd"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 80,
+            "processes": [
+                "docker-proxy"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "::",
+            "interface": "",
+            "port": 80,
+            "processes": [
+                "docker-proxy"
+            ]
+        },
+        {
+            "proto": "udp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 68,
+            "processes": [
+                "dhclient"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 8080,
+            "processes": [
+                "docker-proxy"
+            ]
+        }
+    ],
+    "docker": [
+        {
+            "mode": "rootful",
+            "owner": "",
+            "socket": "/var/run/docker.sock",
+            "state": "running",
+            "version": "29.3.0",
+            "containers": [
+                {
+                    "name": "web",
+                    "image": "nginx:1.29",
+                    "version": "1.0\n| fake | row |",
+                    "state": "running",
+                    "compose_dir": "/srv/web",
+                    "ports": [
+                        {
+                            "host_ip": "0.0.0.0",
+                            "host_port": 80,
+                            "container_port": 80,
+                            "proto": "tcp"
+                        },
+                        {
+                            "host_ip": "::",
+                            "host_port": 80,
+                            "container_port": 80,
+                            "proto": "tcp"
+                        }
+                    ]
+                },
+                {
+                    "name": "db",
+                    "image": "postgres:18-alpine",
+                    "version": "",
+                    "state": "running",
+                    "compose_dir": "/srv/web",
+                    "ports": [
+                        {
+                            "host_ip": "127.0.0.1",
+                            "host_port": 5432,
+                            "container_port": 5432,
+                            "proto": "tcp"
+                        }
+                    ]
+                },
+                {
+                    "name": "old",
+                    "image": "busybox:1",
+                    "version": "",
+                    "state": "exited",
+                    "compose_dir": "",
+                    "ports": []
+                },
+                {
+                    "name": "adminer",
+                    "image": "adminer:5",
+                    "version": "",
+                    "state": "running",
+                    "compose_dir": "/srv/web",
+                    "ports": [
+                        {
+                            "host_ip": "0.0.0.0",
+                            "host_port": 8080,
+                            "container_port": 8080,
+                            "proto": "tcp"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "fail2ban": {
+        "state": "failed",
+        "jails": null
+    },
+    "auto_updates": {
+        "installed": true,
+        "update_lists": "1",
+        "unattended_upgrade": "1",
+        "timer": "enabled",
+        "last_success": "2026-09-01T04:38:35+00:00"
+    }
+}

@@ -1,0 +1,31 @@
+---
+name: Bug report
+description: Report a reproducible problem.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: ramondevprivate.common 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe the actual and expected behavior, and which role, module or plugin is affected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide a minimal playbook or clear steps, with the task output (-v or -vvv).
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the ansible-core version (ansible --version) and the target OS.

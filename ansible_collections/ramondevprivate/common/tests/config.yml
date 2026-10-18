@@ -1,0 +1,4 @@
+---
+modules:
+  # Targets are Debian 12+ (Python 3.11+)
+  python_requires: ">=3.11"

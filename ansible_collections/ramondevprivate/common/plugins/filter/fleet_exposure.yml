@@ -1,0 +1,41 @@
+---
+DOCUMENTATION:
+  name: fleet_exposure
+  short_description: Exposure per host from the ping results of the probe host
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - V(public) if any public address answered, V(internal) if none answered or the host has no public address.
+    - If a ping could not be sent (probe host unreachable, no IPv6 there, no probe in this run) and nothing answered,
+      the host keeps the exposure of its stored snapshot, or is V(unknown).
+  positional: results, stored
+  options:
+    _input:
+      description: Snapshots collected in this run.
+      type: list
+      elements: dict
+      required: true
+    results:
+      description:
+        - The registered C(results) of the ping loop over the
+          R(fleet_probe_targets,ansible_collections.ramondevprivate.common.fleet_probe_targets_filter) entries.
+        - Empty if no probe ran.
+      type: list
+      elements: dict
+      required: true
+    stored:
+      description: Snapshots read from the data directory.
+      type: list
+      elements: dict
+      required: true
+
+EXAMPLES: |
+  - name: Exposure per host
+    ansible.builtin.set_fact:
+      exposures: "{{ current | ramondevprivate.common.fleet_exposure(pings.results | default([]), stored) }}"
+
+RETURN:
+  _value:
+    description: Mapping of host name to C(state), C(checked_at) and C(answered).
+    type: dict

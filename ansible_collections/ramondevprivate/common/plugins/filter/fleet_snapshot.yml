@@ -1,0 +1,43 @@
+---
+DOCUMENTATION:
+  name: fleet_snapshot
+  short_description: Build the fleet snapshot of one host from its facts
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - Reduces C(ansible_facts) to what the fleet inventory documents. OS, kernel, cores, RAM, disk capacity of
+      real filesystems, and the IP addresses of relevant interfaces.
+    - Bind mounts and pseudo filesystems are not counted, and each device counts once.
+    - Interfaces C(lo), C(docker0), C(br-*) and C(veth*) are skipped.
+  positional: host, collected_at, collected
+  options:
+    _input:
+      description: The C(ansible_facts) of the host.
+      type: dict
+      required: true
+    host:
+      description: Inventory name of the host.
+      type: str
+      required: true
+    collected_at:
+      description: Collection time as ISO 8601 string.
+      type: str
+      required: true
+    collected:
+      description: The C(fleet) result of the C(ramondevprivate.common.fleet_info) module (users, SSH settings, UFW, listening
+        sockets, Docker daemons, fail2ban, auto-updates).
+      type: dict
+      required: true
+
+EXAMPLES: |
+  - name: Build snapshot
+    ansible.builtin.set_fact:
+      snapshot: >-
+        {{ ansible_facts | ramondevprivate.common.fleet_snapshot(inventory_hostname, now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ'),
+                                                                 fleet_info_result.fleet) }}
+
+RETURN:
+  _value:
+    description: The snapshot, as stored in the JSON files.
+    type: dict

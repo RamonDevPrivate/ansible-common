@@ -1,0 +1,10 @@
+Matching Defaults entries for user on host-a:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin, use_pty
+
+Runas and Command-specific defaults for user:
+    Defaults!/usr/local/bin/deploy-gateway.sh !requiretty
+
+User user may run the following commands on host-a:
+    (ALL : ALL) ALL
+    (ALL : ALL) ALL

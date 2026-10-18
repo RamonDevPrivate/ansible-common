@@ -1,0 +1,3 @@
+authorizedkeyscommand none
+authorizedkeyscommanduser none
+authorizedkeysfile .ssh/authorized_keys .ssh/authorized_keys2

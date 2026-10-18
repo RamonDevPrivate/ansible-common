@@ -1,0 +1,20 @@
+---
+- name: collect | Gather the facts the snapshot needs
+  ansible.builtin.setup:
+    gather_subset:
+      - min
+      - hardware
+      - network
+  when: ansible_facts.mounts is not defined or ansible_facts.interfaces is not defined
+
+- name: collect | Collect fleet info
+  ramondevprivate.common.fleet_info:
+    group_filter: "{{ fleet_inventory_group_filter }}"
+    user_filter: "{{ fleet_inventory_user_filter }}"
+  register: __fleet_inventory_info
+
+- name: collect | Build snapshot
+  ansible.builtin.set_fact:
+    __fleet_inventory_snapshot: >-
+      {{ ansible_facts | ramondevprivate.common.fleet_snapshot(inventory_hostname, now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ'),
+                                                               __fleet_inventory_info.fleet) }}

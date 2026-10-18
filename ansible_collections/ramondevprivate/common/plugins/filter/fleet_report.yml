@@ -1,0 +1,175 @@
+---
+DOCUMENTATION:
+  name: fleet_report
+  short_description: Merge fleet snapshots into the data for the Markdown pages
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - Merges stored snapshots with the snapshots of the current run (current ones win), marks hosts that were
+      targeted but not collected (not reachable, or a task failed), and computes fleet statistics and formatted values.
+    - Snapshots with another schema version are ignored.
+  positional: stored, unreachable, options
+  options:
+    _input:
+      description: Snapshots collected in this run.
+      type: list
+      elements: dict
+      required: true
+    stored:
+      description: Snapshots read from the data directory.
+      type: list
+      elements: dict
+      required: true
+    unreachable:
+      description: Hosts targeted in this run whose snapshot could not be collected.
+      type: list
+      elements: str
+      required: true
+    options:
+      description:
+        - Settings of the role. Missing keys use the defaults.
+        - Unknown keys and invalid values are an error, so a typo can't silently switch something off.
+      type: dict
+      default: {}
+      suboptions:
+        inactive_days:
+          description: A last login older than this many days (at collection time) marks a user inactive.
+          type: int
+          default: 365
+        stopped_containers:
+          description: List containers that are not running. If false, only running containers are shown and counted.
+          type: bool
+          default: true
+        update_max_age_days:
+          description: Auto-updates without a successful run for this many days need attention.
+          type: int
+          default: 7
+
+EXAMPLES: |
+  - name: Build report
+    ansible.builtin.set_fact:
+      report: >-
+        {{ current | ramondevprivate.common.fleet_report(stored, ansible_play_hosts_all | difference(ansible_play_hosts)) }}
+
+  - name: Build report with a stricter auto-update threshold
+    ansible.builtin.set_fact:
+      report: >-
+        {{ current | ramondevprivate.common.fleet_report(stored, [], {'update_max_age_days': 3}) }}
+
+RETURN:
+  _value:
+    description: Input for the overview and the server pages.
+    type: dict
+    contains:
+      last_updated:
+        description: Newest collection date of all snapshots (YYYY-MM-DD); empty without snapshots.
+        type: str
+      servers:
+        description: Number of hosts in the report.
+        type: int
+      unreachable:
+        description:
+          - Number of hosts not collected in this run (not reachable, or a task failed) or marked C(unreached_since)
+            by an earlier run.
+        type: int
+      public:
+        description: Number of hosts whose exposure is C(public).
+        type: int
+      internal:
+        description: Number of hosts whose exposure is C(internal).
+        type: int
+      os_counts:
+        description: Number of servers per OS major version (Debian 13.1 and 13.3 count as Debian 13), sorted by OS.
+        type: list
+        elements: dict
+        contains:
+          os:
+            description: OS name and major version, for example C(Debian 13).
+            type: str
+          servers:
+            description: Number of servers running it.
+            type: int
+      metrics:
+        description: Cores, RAM and disk across the fleet.
+        type: list
+        elements: dict
+        contains:
+          label:
+            description: C(Cores), C(RAM) or C(Disk).
+            type: str
+          total:
+            description: Formatted sum (RAM and disk with binary units); empty without hosts.
+            type: str
+          average:
+            description: Formatted average; empty without hosts.
+            type: str
+          minimum:
+            description: Formatted smallest value; empty without hosts.
+            type: str
+          maximum:
+            description: Formatted largest value; empty without hosts.
+            type: str
+      totals:
+        description: Totals row of the hardware table.
+        type: dict
+        contains:
+          cores:
+            description: Sum of all cores.
+            type: int
+          ram:
+            description: Formatted sum of all RAM.
+            type: str
+          disk:
+            description: Formatted sum of all disk capacity.
+            type: str
+      containers:
+        description: Number of containers on the pages (without stopped ones if O(options.stopped_containers=false)).
+        type: int
+      attention:
+        description: Needs-attention findings, grouped by host in host order.
+        type: list
+        elements: dict
+        contains:
+          host:
+            description: Inventory name of the host.
+            type: str
+          rule:
+            description: Rule id.
+            type: str
+            choices: [ufw_off, fail2ban_public, auto_updates, sudo_full_nopasswd, key_without_comment]
+          finding:
+            description: Short text of the finding.
+            type: str
+          detail:
+            description: What the finding is about, e.g. the UFW state, the port, or the account and key fingerprint.
+            type: str
+      hosts:
+        description:
+          - One entry per host, sorted by name, with the formatted values the role's templates print.
+          - Its keys follow the templates and are not a stable interface; the JSON snapshots are.
+        type: list
+        elements: dict
+      charts:
+        description: Raw numbers for the Mermaid charts, in host order.
+        type: dict
+        contains:
+          labels:
+            description: Host names without the domain labels all hosts share.
+            type: list
+            elements: str
+          height:
+            description: Chart height in pixels for horizontal bars, growing with the number of hosts.
+            type: int
+          cores:
+            description: Cores per host.
+            type: list
+            elements: int
+          ram_gib:
+            description: RAM per host in GiB, one decimal.
+            type: list
+            elements: float
+          disk_gib:
+            description: Disk capacity per host in GiB, one decimal.
+            type: list
+            elements: float

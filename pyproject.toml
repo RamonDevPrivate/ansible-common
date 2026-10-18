@@ -1,0 +1,128 @@
+[project]
+name = "ansible-common"
+version = "0.0.0"
+description = "Dev environment for the ramondevprivate.common Ansible collection"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ansible-core>=2.21,<2.22",
+    "ansible-lint",
+    "basedpyright",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "types-pyyaml",
+    "yamllint",
+]
+# own group, so the commit checks in CI only install commitizen
+commit = [
+    "commitizen",
+]
+# HTML docs (antsibull-docs, Sphinx) and their lint; not in the default groups
+docs = [
+    "antsibull-docs",
+    "sphinx",
+    "sphinx-ansible-theme",
+]
+
+[tool.uv]
+package = false
+default-groups = ["dev", "commit"]
+exclude-newer = "7 days"
+
+[tool.ruff]
+line-length = 160
+target-version = "py311"  # Debian 12; module and module_utils unit tests also run on the targets' Python
+extend-exclude = ["ansible_collections/ramondevprivate/common/tests/output"]
+# collection content is an implicit namespace package (no __init__.py), as ansible-core expects
+namespace-packages = ["ansible_collections"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", # trailing commas are handled by the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"ansible_collections/ramondevprivate/common/plugins/modules/**" = [
+    "E402", # ansible-test: imports must follow DOCUMENTATION/EXAMPLES/RETURN
+]
+"ansible_collections/ramondevprivate/common/plugins/lookup/**" = [
+    "E402", # plugin docs first, as in modules and ansible-core's own lookups
+]
+"docs/conf.py" = [
+    "INP001", # Sphinx configuration file, not part of a package
+]
+"ansible_collections/ramondevprivate/common/tests/**" = [
+    "S101",    # pytest asserts
+    "PLR2004", # expected values inline are clearer than constants
+    "S104",    # wildcard addresses are test data that is compared, never bound
+]
+
+[tool.ruff.lint.flake8-copyright]
+# Ansible header style: "# Copyright: (c) 2026, Ramon"
+notice-rgx = '(?i)Copyright: \(c\) \d{4}(-\d{4})?,'
+author = "Ramon"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["ansible_collections.ramondevprivate.common"]
+
+[tool.basedpyright]
+include = ["ansible_collections"]
+exclude = ["ansible_collections/ramondevprivate/common/tests/output"]
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "all"
+pythonVersion = "3.12"
+executionEnvironments = [
+    { root = "ansible_collections/ramondevprivate/common/plugins", pythonVersion = "3.11", extraPaths = ["."] },
+    { root = "ansible_collections/ramondevprivate/common/tests", pythonVersion = "3.11", extraPaths = ["."] },
+]
+
+[tool.pytest]
+minversion = "9.0"
+testpaths = ["ansible_collections/ramondevprivate/common/tests/unit"]
+pythonpath = ["."]
+addopts = ["--import-mode=importlib", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]  # a warning (deprecation, unclosed resource) fails the test that caused it
+
+[tool.coverage.run]
+source = ["ansible_collections/ramondevprivate/common/plugins"]
+branch = true
+
+[tool.commitizen]
+# Conventional Commits with the rules of commitlint's config-conventional, as in sushi-angular
+name = "cz_customize"
+# Releases (cz bump in the release workflow): the version comes from the git tags and is written into galaxy.yml
+version_provider = "scm"
+tag_format = "v$version"
+annotated_tag = true
+version_files = ["ansible_collections/ramondevprivate/common/galaxy.yml:^version:"]
+bump_message = "chore(release): v$new_version"
+# the release workflow passes --changelog; the first release (1.0.0) is only tagged, its changelog is hand-written
+update_changelog_on_bump = false
+changelog_file = "ansible_collections/ramondevprivate/common/CHANGELOG.md"
+changelog_incremental = true
+
+[tool.commitizen.customize]
+schema_pattern = '(?s)(?=[^\n\r]{1,100}(\n|$))(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\((deps|release|fleet_inventory)([/\\,](deps|release|fleet_inventory))*\))?!?: (?![A-Z])([^\s.]|\S[^\n\r]*[^\s.])(\n.*)?$'
+schema = "<type>(<scope>): <subject>"
+example = "fix(fleet_inventory): keep the stored exposure of hosts outside --limit"
+# Changelog sections as in sushi-angular's .versionrc.json; build, ci, chore, style and test stay out
+commit_parser = '^(?P<change_type>feat|fix|perf|refactor|docs|revert)(?:\((?P<scope>[^()\r\n]*)\))?(?P<breaking>!)?: (?P<message>.*)'
+changelog_pattern = '^(feat|fix|perf|refactor|docs|revert)(\(.+\))?!?: '
+change_type_order = ["Features", "Bug Fixes", "Performance", "Refactoring", "Documentation", "Reverts"]
+
+[tool.commitizen.customize.change_type_map]
+feat = "Features"
+fix = "Bug Fixes"
+perf = "Performance"
+refactor = "Refactoring"
+docs = "Documentation"
+revert = "Reverts"

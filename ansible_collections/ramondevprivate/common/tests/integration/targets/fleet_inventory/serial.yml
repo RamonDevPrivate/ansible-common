@@ -1,0 +1,8 @@
+---
+# The whole role in a play with serial: the role must stop at its first task
+- name: Run the role in batches of one host
+  hosts: fleet
+  gather_facts: false
+  serial: 1
+  roles:
+    - role: ramondevprivate.common.fleet_inventory

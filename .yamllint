@@ -1,0 +1,22 @@
+---
+extends: default
+
+rules:
+  # the next three are required by ansible-lint (yaml_utils._validate_yamllint_compatibility); it warns about an
+  # incompatible yamllint config otherwise
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+  line-length:
+    max: 160
+  truthy:
+    check-keys: false # GitHub Actions' "on:" key
+
+ignore: |
+  .venv/
+  ansible_collections/ramondevprivate/common/tests/output/

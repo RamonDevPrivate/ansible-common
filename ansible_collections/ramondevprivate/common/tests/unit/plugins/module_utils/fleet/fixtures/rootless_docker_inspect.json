@@ -1,0 +1,651 @@
+[
+  {
+    "Id": "1982141933e9ebbed72f038ce0fc1cb4ffef8f6966f43602f8a1cf46b98d9b99",
+    "Name": "/ed-miso-client",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/miso-client:dev",
+      "Labels": {
+        "com.docker.compose.project": "ed-miso",
+        "com.docker.compose.project.config_files": "/services/ed/miso/compose.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/ed/miso.env,/services/ed/miso/.env.versions,/services/ed/miso/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/miso",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik-public",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "2019/tcp": null,
+        "443/tcp": null,
+        "443/udp": null,
+        "80/tcp": null,
+        "8080/tcp": null
+      }
+    },
+    "Mounts": []
+  },
+  {
+    "Id": "567a998c81cc6e27315cb1adee1831bc9343c09387ada03983c326b6f29de7c7",
+    "Name": "/ed-miso-server",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/miso-server:dev",
+      "Labels": {
+        "com.docker.compose.project": "ed-miso",
+        "com.docker.compose.project.config_files": "/services/ed/miso/compose.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/ed/miso.env,/services/ed/miso/.env.versions,/services/ed/miso/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/miso",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "ed-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "3000/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/services/ed/miso/logs",
+        "Destination": "/app/logs",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/miso",
+        "Destination": "/app/config",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/_shared/neo4j_password",
+        "Destination": "/run/secrets/neo4j_password",
+        "Mode": "",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "8e4cad521aeb41548255e3aa5bb9bd13712114ea55af28972733ac85badd10e2",
+    "Name": "/ed-tori-server",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/tori-server:dev",
+      "Labels": {
+        "com.docker.compose.project": "ed-tori",
+        "com.docker.compose.project.config_files": "/services/ed/tori/compose.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/ed/tori.env,/services/ed/tori/.env.versions,/services/ed/tori/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/tori",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "ed-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "3000/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/services/files/gcore",
+        "Destination": "/tori-config",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "volume",
+        "Name": "ed-tori_tori-userdb",
+        "Source": "/home/dockeruser/.local/share/docker/volumes/ed-tori_tori-userdb/_data",
+        "Destination": "/usr/src/app/data",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/_shared/neo4j_password",
+        "Destination": "/run/secrets/neo4j_password",
+        "Mode": "",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "84decca757f4112c5299764121c405f4ef602be5839eb90e4bbcbcfc05e99f39",
+    "Name": "/ed-tori-client",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/tori-client:dev",
+      "Labels": {
+        "com.docker.compose.project": "ed-tori",
+        "com.docker.compose.project.config_files": "/services/ed/tori/compose.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/ed/tori.env,/services/ed/tori/.env.versions,/services/ed/tori/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/tori",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik-public",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "2019/tcp": null,
+        "443/tcp": null,
+        "443/udp": null,
+        "80/tcp": null,
+        "8080/tcp": null
+      }
+    },
+    "Mounts": []
+  },
+  {
+    "Id": "b0ed9dfc901d62bbca3254503909b122589460988aecdd1f442431cda9658b27",
+    "Name": "/traefik-socket-proxy-1",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459",
+      "Labels": {
+        "com.docker.compose.project": "traefik",
+        "com.docker.compose.project.config_files": "/services/traefik/compose.yml,/services/traefik/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/traefik/.env.versions",
+        "com.docker.compose.project.working_dir": "/services/traefik",
+        "org.opencontainers.image.version": "v0.5.0"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik_proxy",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "2375/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/run/user/1005/docker.sock",
+        "Destination": "/var/run/docker.sock",
+        "Mode": "ro",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "222317dd7f6219f45664987f32edd4720ada8a2914d6d291b75d8b956f2b1ea9",
+    "Name": "/ed-neo4j",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "neo4j:5.26.30@sha256:22ec5cd05a8cbb372fc4bed5e384c30bc75fd92504c72be4462039761b105f61",
+      "Labels": {
+        "com.docker.compose.project": "ed-neo4j",
+        "com.docker.compose.project.config_files": "/services/ed/neo4j/compose.yml",
+        "com.docker.compose.project.environment_file": "/services/ed/neo4j/.env.versions,/services/ed/neo4j/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/neo4j",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "ed-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "7473/tcp": null,
+        "7474/tcp": null,
+        "6687/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/services/ed/neo4j/logs",
+        "Destination": "/logs",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/neo4j/import",
+        "Destination": "/import",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/neo4j/plugins",
+        "Destination": "/plugins",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/_shared/neo4j_auth",
+        "Destination": "/run/secrets/neo4j_auth",
+        "Mode": "",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/neo4j/backups",
+        "Destination": "/backups",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "volume",
+        "Name": "ed-neo4j_neo4j-data",
+        "Source": "/home/dockeruser/.local/share/docker/volumes/ed-neo4j_neo4j-data/_data",
+        "Destination": "/data",
+        "Mode": "rw",
+        "RW": true
+      }
+    ]
+  },
+  {
+    "Id": "603b5597e084cb09e53381e0bf2fc8d8999eb4ef37802a31b5a60790697279b2",
+    "Name": "/traefik-traefik-1",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "traefik:v3.7.13@sha256:f86a2cab1b5c649070c49f883c743dd32d8485a56e3368c5f93b9e91f1e91259",
+      "Labels": {
+        "com.docker.compose.project": "traefik",
+        "com.docker.compose.project.config_files": "/services/traefik/compose.yml,/services/traefik/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/traefik/.env.versions",
+        "com.docker.compose.project.working_dir": "/services/traefik",
+        "org.opencontainers.image.version": "v3.7.13"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik_proxy",
+      "PortBindings": {
+        "443/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "443"
+          }
+        ],
+        "6687/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "6687"
+          }
+        ],
+        "6688/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "6688"
+          }
+        ],
+        "80/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "80"
+          }
+        ]
+      }
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "443/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "443"
+          }
+        ],
+        "6687/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "6687"
+          }
+        ],
+        "6688/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "6688"
+          }
+        ],
+        "80/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "80"
+          }
+        ]
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/certificates",
+        "Destination": "/certificates",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/traefik/secrets/users",
+        "Destination": "/run/secrets/users",
+        "Mode": "",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/traefik/secrets/ops_users",
+        "Destination": "/run/secrets/ops_users",
+        "Mode": "",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/traefik/logs",
+        "Destination": "/logs",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/traefik/config",
+        "Destination": "/config",
+        "Mode": "ro",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "4acce4dc086abc1eaf9fff2a12ebe26cd44e05d934dce2dbeacd4c466666d0df",
+    "Name": "/pub-neo4j",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "neo4j:5.26.30@sha256:22ec5cd05a8cbb372fc4bed5e384c30bc75fd92504c72be4462039761b105f61",
+      "Labels": {
+        "com.docker.compose.project": "pub-neo4j",
+        "com.docker.compose.project.config_files": "/services/pub/neo4j/compose.yml,/services/pub/neo4j/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/pub/neo4j/.env.versions,/services/pub/neo4j/.env",
+        "com.docker.compose.project.working_dir": "/services/pub/neo4j",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "pub-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "7473/tcp": null,
+        "7474/tcp": null,
+        "6687/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/services/pub/neo4j/logs",
+        "Destination": "/logs",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/pub/neo4j/import",
+        "Destination": "/import",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/pub/neo4j/plugins",
+        "Destination": "/plugins",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/pub/neo4j/backups",
+        "Destination": "/backups",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "volume",
+        "Name": "pub-neo4j_neo4j-data",
+        "Source": "/home/dockeruser/.local/share/docker/volumes/pub-neo4j_neo4j-data/_data",
+        "Destination": "/data",
+        "Mode": "rw",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/pub/_shared/neo4j_auth",
+        "Destination": "/run/secrets/neo4j_auth",
+        "Mode": "",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "e2070425a84507f4551a7743c63468a87e8ba656c7e921ba812f53e6688ae56d",
+    "Name": "/ed-shoyu-server",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/shoyu-server:dev",
+      "Labels": {
+        "com.docker.compose.project": "ed-shoyu",
+        "com.docker.compose.project.config_files": "/services/ed/shoyu/compose.yml,/services/ed/shoyu/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/ed/shoyu/.env.versions,/services/ed/shoyu/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/shoyu",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "ed-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "3000/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/config",
+        "Destination": "/app/config",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/i18n",
+        "Destination": "/app/i18n",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/markdown",
+        "Destination": "/app/markdown",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/ed/_shared/neo4j_password",
+        "Destination": "/run/secrets/neo4j_password",
+        "Mode": "",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/assets",
+        "Destination": "/app/assets",
+        "Mode": "ro",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "e32ac7ab17b686ef76f624f64b1e8bfd74d4dd1b60f5f288963ebb487d2ced64",
+    "Name": "/ed-shoyu-client",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/shoyu-client:dev",
+      "Labels": {
+        "com.docker.compose.project": "ed-shoyu",
+        "com.docker.compose.project.config_files": "/services/ed/shoyu/compose.yml,/services/ed/shoyu/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/ed/shoyu.env,/services/ed/shoyu/.env.versions,/services/ed/shoyu/.env",
+        "com.docker.compose.project.working_dir": "/services/ed/shoyu",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik-public",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "2019/tcp": null,
+        "443/tcp": null,
+        "443/udp": null,
+        "80/tcp": null,
+        "8080/tcp": null
+      }
+    },
+    "Mounts": []
+  },
+  {
+    "Id": "d9f015fbc62c170d88c383820c3b1823fe1638f4cccdbfc65bb9e3446c14b6ba",
+    "Name": "/pub-shoyu-server",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/shoyu-server:dev",
+      "Labels": {
+        "com.docker.compose.project": "pub-shoyu",
+        "com.docker.compose.project.config_files": "/services/pub/shoyu/compose.yml,/services/pub/shoyu/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/pub/shoyu.env,/services/pub/shoyu/.env.versions,/services/pub/shoyu/.env",
+        "com.docker.compose.project.working_dir": "/services/pub/shoyu",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "pub-internal",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "3000/tcp": null
+      }
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/i18n",
+        "Destination": "/app/i18n",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/markdown",
+        "Destination": "/app/markdown",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/assets",
+        "Destination": "/app/assets",
+        "Mode": "ro",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/pub/_shared/neo4j_password",
+        "Destination": "/run/secrets/neo4j_password",
+        "Mode": "",
+        "RW": false
+      },
+      {
+        "Type": "bind",
+        "Source": "/services/files/shoyu/config",
+        "Destination": "/app/config",
+        "Mode": "ro",
+        "RW": false
+      }
+    ]
+  },
+  {
+    "Id": "239b8e30036e6a9d7da631de0cbd2ca04279f25e6d99768392ef72b8f9c72d5f",
+    "Name": "/pub-shoyu-client",
+    "State": {
+      "Status": "running"
+    },
+    "Config": {
+      "Image": "ghcr.io/example-org/shoyu-client:dev",
+      "Labels": {
+        "com.docker.compose.project": "pub-shoyu",
+        "com.docker.compose.project.config_files": "/services/pub/shoyu/compose.yml,/services/pub/shoyu/compose.override.yml",
+        "com.docker.compose.project.environment_file": "/services/files/_config/pub/shoyu.env,/services/pub/shoyu/.env.versions,/services/pub/shoyu/.env",
+        "com.docker.compose.project.working_dir": "/services/pub/shoyu",
+        "org.opencontainers.image.version": "dev",
+        "traefik.enable": "true"
+      }
+    },
+    "HostConfig": {
+      "NetworkMode": "traefik-public",
+      "PortBindings": {}
+    },
+    "NetworkSettings": {
+      "Ports": {
+        "2019/tcp": null,
+        "443/tcp": null,
+        "443/udp": null,
+        "80/tcp": null,
+        "8080/tcp": null
+      }
+    },
+    "Mounts": []
+  }
+]

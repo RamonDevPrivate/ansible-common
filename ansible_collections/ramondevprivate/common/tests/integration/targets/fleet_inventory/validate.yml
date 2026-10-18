@@ -1,0 +1,8 @@
+---
+# The role's main entry point with only the variables given with -e: argument validation runs first.
+# The fixture playbook (render.yml) uses tasks_from, which skips validation.
+- name: Run the whole role as a playbook would
+  hosts: host-a
+  gather_facts: false
+  roles:
+    - role: ramondevprivate.common.fleet_inventory

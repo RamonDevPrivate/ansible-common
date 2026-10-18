@@ -1,0 +1,19 @@
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22                         ALLOW IN    10.0.0.0/8
+18050/tcp                  ALLOW IN    10.0.0.0/8
+18050/udp                  ALLOW IN    10.0.0.0/8
+18051/tcp                  ALLOW IN    10.66.77.88
+18051/udp                  ALLOW IN    10.66.77.88
+22/tcp                     ALLOW IN    Anywhere
+80/tcp                     ALLOW IN    Anywhere                   # traefik web
+443/tcp                    ALLOW IN    Anywhere                   # traefik websecure
+6687/tcp                   ALLOW IN    10.0.0.0/8                 # traefik app from vpn
+6688/tcp                   ALLOW IN    10.0.0.0/8                 # traefik app-tcp from vpn
+80/tcp (v6)                ALLOW IN    Anywhere (v6)              # traefik web
+443/tcp (v6)               ALLOW IN    Anywhere (v6)              # traefik websecure

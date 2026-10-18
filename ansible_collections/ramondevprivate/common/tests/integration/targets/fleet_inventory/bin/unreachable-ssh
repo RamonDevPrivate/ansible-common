@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fake ssh for a probe host that can't be reached: exit 255 is how ssh reports a failed connection.
+echo "ssh: Could not resolve hostname probe.invalid: Name or service not known" >&2
+exit 255

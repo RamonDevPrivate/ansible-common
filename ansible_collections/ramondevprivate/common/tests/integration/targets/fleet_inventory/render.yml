@@ -1,0 +1,30 @@
+---
+- name: Render fixed snapshots
+  hosts: fleet
+  gather_facts: false
+  vars:
+    fleet_inventory_data_dir: "{{ fleet_test_dir }}/data"
+    fleet_inventory_output_dir: "{{ fleet_test_dir }}/vault"
+    fleet_inventory_mermaid_charts: true
+    fleet_inventory_update_max_age_days: 20  # not the default: proves the value reaches the report as a number
+    fleet_inventory_probe_host: probe  # in the test inventory; runme.sh puts a fake ping first on PATH
+    fleet_inventory_probe_user: "{{ lookup('ansible.builtin.env', 'USER', default='root') }}"  # local connection
+  tasks:
+    - name: Simulate host-c as not reached
+      ansible.builtin.meta: end_host
+      when: inventory_hostname == 'host-c'
+
+    - name: Use the fixture snapshot as collected snapshot
+      ansible.builtin.set_fact:
+        __fleet_inventory_snapshot: >-
+          {{ lookup('ansible.builtin.file', 'files/current/' ~ inventory_hostname ~ '.json') | from_json }}
+
+    - name: Probe
+      ansible.builtin.include_role:
+        name: ramondevprivate.common.fleet_inventory
+        tasks_from: probe
+
+    - name: Render
+      ansible.builtin.include_role:
+        name: ramondevprivate.common.fleet_inventory
+        tasks_from: render

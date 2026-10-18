@@ -1,0 +1,6 @@
+Matching Defaults entries for deploy on host-a:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin, use_pty
+
+User deploy may run the following commands on host-a:
+    (root) NOPASSWD: /usr/bin/systemctl restart nginx, /usr/bin/journalctl
+    (www-data) /usr/bin/git pull

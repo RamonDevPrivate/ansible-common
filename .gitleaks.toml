@@ -1,0 +1,16 @@
+# gitleaks configuration: the default rules plus an allowlist for test data
+[extend]
+useDefault = true
+
+# OpenSSH public keys (the base64 blob of an authorized_keys line) are not secrets; the tests use them as data, e.g.
+# KEY = "AAAAC3NzaC1lZDI1NTE5..." in test_collect.py, which generic-api-key reports because of the variable name.
+# A blob starts with the length-prefixed key type name, so each alternative below is that start in base64:
+#   AAAAB3NzaC1yc2E = ssh-rsa, AAAAC3NzaC1lZDI1NTE5 = ssh-ed25519, AAAAE2VjZHNhLXNoYTItbmlzdHA = ecdsa-sha2-nistp*,
+#   AAAAInNr... = sk-ecdsa-sha2-nistp256@openssh.com, AAAAGnNr... = sk-ssh-ed25519@openssh.com
+# Tokens and private keys (an OpenSSH private key's base64 starts with b3BlbnNzaC1rZXktdjE) don't start like that.
+[[allowlists]]
+description = "OpenSSH public keys in test data"
+targetRules = ["generic-api-key"]
+regexes = [
+  '''^AAAA(B3NzaC1yc2E|C3NzaC1lZDI1NTE5|E2VjZHNhLXNoYTItbmlzdHA|InNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20|GnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29t)[A-Za-z0-9+/]+={0,2}$''',
+]

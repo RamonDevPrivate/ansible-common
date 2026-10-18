@@ -1,0 +1,17 @@
+---
+namespace: ramondevprivate
+name: common
+version: 1.0.0
+readme: README.md
+repository: https://github.com/RamonDevPrivate/ansible-common
+authors:
+  - Ramon (@RamonDevPrivate)
+description: Common roles and modules for Ramon's Debian fleet
+license:
+  - GPL-3.0-or-later
+tags:
+  - linux
+  - inventory
+dependencies: {}
+build_ignore:
+  - tests/output

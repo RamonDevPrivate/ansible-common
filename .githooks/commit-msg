@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Conventional Commits check, rules in pyproject.toml ([tool.commitizen])
+# enable with: git config core.hooksPath .githooks
+exec uv run --frozen --only-group commit cz check --allow-abort --commit-msg-file "$1"

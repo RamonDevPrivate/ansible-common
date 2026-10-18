@@ -1,0 +1,88 @@
+{
+    "schema_version": 1,
+    "host": "host-a",
+    "collected_at": "2026-09-01T08:00:00Z",
+    "system": {
+        "distribution": "Debian",
+        "version": "13.7",
+        "release": "trixie",
+        "kernel": "6.12.107+deb13-amd64",
+        "cores": 8,
+        "ram_mb": 32101,
+        "disk": {
+            "total_bytes": 528352806912,
+            "mounts": [
+                {
+                    "mount": "/",
+                    "device": "/dev/vda1",
+                    "fstype": "ext4",
+                    "size_bytes": 528223088640
+                },
+                {
+                    "mount": "/boot/efi",
+                    "device": "/dev/vda15",
+                    "fstype": "vfat",
+                    "size_bytes": 129718272
+                }
+            ]
+        }
+    },
+    "addresses": [
+        {
+            "interface": "eth0",
+            "address": "203.0.113.23",
+            "prefix": 24,
+            "family": "ipv4",
+            "private": false
+        },
+        {
+            "interface": "eth0",
+            "address": "fe80::ff:fe00:1",
+            "prefix": 64,
+            "family": "ipv6",
+            "private": true
+        }
+    ],
+    "users": [],
+    "ssh": {
+        "key_files": [
+            ".ssh/authorized_keys",
+            ".ssh/authorized_keys2"
+        ],
+        "key_files_source": "sshd",
+        "keys_command": false
+    },
+    "ufw": {
+        "state": "active",
+        "logging": "on (low)",
+        "default_incoming": "deny",
+        "default_outgoing": "allow",
+        "default_routed": "disabled",
+        "rules": []
+    },
+    "listeners": [
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 22,
+            "processes": [
+                "sshd"
+            ]
+        }
+    ],
+    "docker": [],
+    "fail2ban": {
+        "state": "active",
+        "jails": [
+            "sshd"
+        ]
+    },
+    "auto_updates": {
+        "installed": true,
+        "update_lists": "1",
+        "unattended_upgrade": "1",
+        "timer": "enabled",
+        "last_success": "2026-09-01T04:00:00+00:00"
+    }
+}

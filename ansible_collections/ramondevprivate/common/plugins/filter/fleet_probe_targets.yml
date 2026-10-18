@@ -1,0 +1,29 @@
+---
+DOCUMENTATION:
+  name: fleet_probe_targets
+  short_description: Public addresses of fleet snapshots to ping from the probe host
+  version_added: 1.0.0
+  author:
+    - Ramon (@RamonDevPrivate)
+  description:
+    - Returns one entry per public (non-private) address of each snapshot, with host, address and family.
+    - Public means as classified by C(fleet_snapshot); an address that doesn't parse counts as private and is never
+      returned.
+  options:
+    _input:
+      description: Snapshots collected in this run.
+      type: list
+      elements: dict
+      required: true
+
+EXAMPLES: |
+  - name: Ping public addresses
+    ansible.builtin.command:
+      argv: [ping, "{{ '-6' if item.family == 'ipv6' else '-4' }}", -c, "1", -W, "2", "{{ item.address }}"]
+    loop: "{{ snapshots | ramondevprivate.common.fleet_probe_targets }}"
+
+RETURN:
+  _value:
+    description: Entries with C(host), C(address) and C(family) (V(ipv4) or V(ipv6)).
+    type: list
+    elements: dict

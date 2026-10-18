@@ -1,0 +1,6 @@
+#!/bin/sh
+# Fake ping for the probe host (local connection): logs "<family flag> <address>" per call to $FLEET_PING_LOG;
+# only host-b's public IPv4 address answers.
+for arg; do last=$arg; done
+echo "$1 ${last}" >> "${FLEET_PING_LOG}"
+[ "$last" = "198.51.100.42" ]

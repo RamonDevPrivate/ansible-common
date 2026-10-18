@@ -1,0 +1,317 @@
+{
+    "schema_version": 1,
+    "host": "host-a",
+    "collected_at": "2026-10-09T13:08:00Z",
+    "system": {
+        "distribution": "Debian",
+        "version": "13.7",
+        "release": "trixie",
+        "kernel": "6.12.107+deb13-amd64",
+        "cores": 10,
+        "ram_mb": 32101,
+        "disk": {
+            "total_bytes": 528352806912,
+            "mounts": [
+                {
+                    "mount": "/",
+                    "device": "/dev/vda1",
+                    "fstype": "ext4",
+                    "size_bytes": 528223088640
+                },
+                {
+                    "mount": "/boot/efi",
+                    "device": "/dev/vda15",
+                    "fstype": "vfat",
+                    "size_bytes": 129718272
+                }
+            ]
+        }
+    },
+    "addresses": [
+        {
+            "interface": "eth0",
+            "address": "203.0.113.23",
+            "prefix": 24,
+            "family": "ipv4",
+            "private": false
+        },
+        {
+            "interface": "eth0",
+            "address": "fe80::ff:fe00:1",
+            "prefix": 64,
+            "family": "ipv6",
+            "private": true
+        }
+    ],
+    "users": [
+        {
+            "name": "deploy",
+            "uid": 999,
+            "groups": [],
+            "sudo": {
+                "level": "limited",
+                "nopasswd": true,
+                "rules": [
+                    "(root) NOPASSWD: /usr/bin/systemctl restart nginx"
+                ]
+            },
+            "authorized_keys": [
+                {
+                    "key_type": "ssh-ed25519",
+                    "comment": "ci@example.org",
+                    "fingerprint": "SHA256:ci",
+                    "allowed_from": "192.0.2.0/24",
+                    "forced_command": true
+                }
+            ],
+            "last_login": ""
+        },
+        {
+            "name": "root",
+            "uid": 0,
+            "groups": [],
+            "sudo": {
+                "level": "full",
+                "nopasswd": false,
+                "rules": [
+                    "(ALL : ALL) ALL"
+                ]
+            },
+            "authorized_keys": [],
+            "last_login": ""
+        },
+        {
+            "name": "user",
+            "uid": 1000,
+            "groups": [
+                "docker",
+                "sudo"
+            ],
+            "sudo": {
+                "level": "full",
+                "nopasswd": false,
+                "rules": [
+                    "(ALL : ALL) ALL"
+                ]
+            },
+            "authorized_keys": [
+                {
+                    "key_type": "ssh-ed25519",
+                    "comment": "alice@example.org",
+                    "fingerprint": "SHA256:alice",
+                    "allowed_from": "",
+                    "forced_command": false
+                },
+                {
+                    "key_type": "ssh-ed25519",
+                    "comment": "",
+                    "fingerprint": "SHA256:nocomment",
+                    "allowed_from": "",
+                    "forced_command": false
+                }
+            ],
+            "last_login": "2026-10-09T10:00:00+02:00"
+        }
+    ],
+    "ssh": {
+        "key_files": [
+            ".ssh/authorized_keys",
+            ".ssh/authorized_keys2"
+        ],
+        "key_files_source": "sshd",
+        "keys_command": false
+    },
+    "ufw": {
+        "state": "active",
+        "logging": "on (low)",
+        "default_incoming": "deny",
+        "default_outgoing": "allow",
+        "default_routed": "disabled",
+        "rules": [
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "any",
+                "to_port": "22",
+                "to_address": "0.0.0.0/0",
+                "from_port": "any",
+                "from_address": "10.0.0.0/8",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "",
+                "family": "ipv4"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "22",
+                "to_address": "0.0.0.0/0",
+                "from_port": "any",
+                "from_address": "0.0.0.0/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "",
+                "family": "ipv4"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "443",
+                "to_address": "0.0.0.0/0",
+                "from_port": "any",
+                "from_address": "0.0.0.0/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "proxy | web",
+                "family": "ipv4"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "443",
+                "to_address": "::/0",
+                "from_port": "any",
+                "from_address": "::/0",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "proxy | web",
+                "family": "ipv6"
+            },
+            {
+                "action": "allow",
+                "direction": "in",
+                "route": false,
+                "proto": "tcp",
+                "to_port": "6687",
+                "to_address": "0.0.0.0/0",
+                "from_port": "any",
+                "from_address": "10.0.0.0/8",
+                "app": "",
+                "interface_in": "",
+                "interface_out": "",
+                "comment": "",
+                "family": "ipv4"
+            }
+        ]
+    },
+    "listeners": [
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 22,
+            "processes": [
+                "sshd"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "::",
+            "interface": "",
+            "port": 22,
+            "processes": [
+                "sshd"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "127.0.0.53",
+            "interface": "lo",
+            "port": 53,
+            "processes": [
+                "systemd-resolve"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 443,
+            "processes": [
+                "rootlesskit"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "0.0.0.0",
+            "interface": "",
+            "port": 6687,
+            "processes": [
+                "rootlesskit"
+            ]
+        },
+        {
+            "proto": "tcp",
+            "address": "*",
+            "interface": "",
+            "port": 18050,
+            "processes": [
+                "zabbix_agent2"
+            ]
+        }
+    ],
+    "docker": [
+        {
+            "mode": "rootless",
+            "owner": "dockeruser",
+            "socket": "/run/user/1005/docker.sock",
+            "state": "running",
+            "version": "29.7.1",
+            "containers": [
+                {
+                    "name": "proxy",
+                    "image": "traefik:v3.7.13@sha256:f86a",
+                    "version": "v3.7.13",
+                    "state": "running",
+                    "compose_dir": "/srv/proxy",
+                    "ports": [
+                        {
+                            "host_ip": "0.0.0.0",
+                            "host_port": 443,
+                            "container_port": 443,
+                            "proto": "tcp"
+                        },
+                        {
+                            "host_ip": "0.0.0.0",
+                            "host_port": 6687,
+                            "container_port": 6687,
+                            "proto": "tcp"
+                        }
+                    ]
+                },
+                {
+                    "name": "app",
+                    "image": "ghcr.io/example-org/app:dev",
+                    "version": "dev",
+                    "state": "running",
+                    "compose_dir": "/srv/app",
+                    "ports": []
+                }
+            ]
+        }
+    ],
+    "fail2ban": {
+        "state": "active",
+        "jails": [
+            "sshd"
+        ]
+    },
+    "auto_updates": {
+        "installed": true,
+        "update_lists": "1",
+        "unattended_upgrade": "1",
+        "timer": "enabled",
+        "last_success": "2026-10-09T04:03:35+00:00"
+    }
+}

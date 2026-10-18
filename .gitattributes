@@ -1,0 +1,27 @@
+# Normalize all text files to LF in the repository
+* text=auto eol=lf
+
+# Shell scripts should always use LF
+*.sh text eol=lf
+
+# Windows scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files (prevent diff/merge attempts)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.7z binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Lockfiles should not be auto-merged
+uv.lock -merge
