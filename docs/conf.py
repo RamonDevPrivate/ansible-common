@@ -13,6 +13,7 @@ pygments_style = "ansible"
 highlight_language = "YAML+Jinja"
 
 html_theme = "sphinx_ansible_theme"
+html_theme_options = {"documentation_home_url": "https://ramondevprivate.github.io/ansible-common/"}
 html_show_sphinx = False
 display_version = False
 html_use_smartypants = True
