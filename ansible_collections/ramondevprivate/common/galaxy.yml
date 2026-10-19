@@ -4,6 +4,8 @@ name: common
 version: 1.0.0
 readme: README.md
 repository: https://github.com/RamonDevPrivate/ansible-common
+documentation: https://ramondevprivate.github.io/ansible-common/
+issues: https://github.com/RamonDevPrivate/ansible-common/issues
 authors:
   - Ramon (@RamonDevPrivate)
 description: Common roles and modules for Ramon's Debian fleet

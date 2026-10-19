@@ -163,6 +163,16 @@ jobs:
             echo ""
             echo "### Installation"
             echo ""
+            echo "From Ansible Galaxy:"
+            echo ""
+            echo '```yaml'
+            echo "collections:"
+            echo "  - name: ramondevprivate.common"
+            echo "    version: ${VERSION}"
+            echo '```'
+            echo ""
+            echo "From Git:"
+            echo ""
             echo '```yaml'
             echo "collections:"
             echo "  - name: https://github.com/${GITHUB_REPOSITORY}.git#/${COLLECTION_DIR}/"
@@ -270,9 +280,131 @@ jobs:
             exit 1
           fi
 
+  galaxy:
+    name: Publish to Ansible Galaxy
+    needs: [release, verify] # Galaxy versions can't be replaced, so only a verified release is published
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # also bounds the import wait, see the publish step
+    environment:
+      name: galaxy
+      url: https://galaxy.ansible.com/ui/repo/published/ramondevprivate/common/
+    permissions:
+      contents: read # required to download the release asset
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+      TARBALL: ${{ needs.release.outputs.tarball }}
+      SHA256: ${{ needs.release.outputs.sha256 }}
+      GALAXY_VERSIONS_URL: https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/ramondevprivate/common/versions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: v${{ needs.release.outputs.version }}
+          persist-credentials: false
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Download the released tarball # the same bytes as the GitHub release, not a new build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern "$TARBALL"
+          echo "$SHA256  $TARBALL" | sha256sum --check
+      - name: Check whether Galaxy has this version
+        id: existing
+        run: |
+          code=$(curl --silent --show-error --retry 3 --max-time 30 --output "$RUNNER_TEMP/galaxy-version.json" \
+            --write-out '%{http_code}' "$GALAXY_VERSIONS_URL/$VERSION/")
+          case "$code" in
+            200)
+              # rerun after a failed release: the version may already be on Galaxy, but only with this tarball
+              # (an upload whose import is still running shows 404 here; rerun once the import has finished)
+              galaxy_sha256=$(jq -r '.artifact.sha256' "$RUNNER_TEMP/galaxy-version.json")
+              if [ "$galaxy_sha256" != "$SHA256" ]; then
+                echo "::error::Galaxy has $VERSION with sha256 $galaxy_sha256, the release tarball has $SHA256"
+                exit 1
+              fi
+              echo "::notice::Galaxy has $VERSION already, skipping the upload"
+              echo "published=true" >> "$GITHUB_OUTPUT"
+              ;;
+            404) echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::Galaxy answered HTTP $code for $GALAXY_VERSIONS_URL/$VERSION/"
+              exit 1
+              ;;
+          esac
+      - name: Publish to Galaxy and wait for the import
+        if: steps.existing.outputs.published != 'true'
+        env:
+          ANSIBLE_GALAXY_SERVER_LIST: galaxy
+          ANSIBLE_GALAXY_SERVER_GALAXY_URL: https://galaxy.ansible.com/
+          ANSIBLE_GALAXY_SERVER_GALAXY_TOKEN: ${{ secrets.GALAXY_API_KEY }}
+          ANSIBLE: ${{ github.workspace }}/.venv/bin
+        working-directory: ${{ runner.temp }}
+        run: |
+          if [ -z "$ANSIBLE_GALAXY_SERVER_GALAXY_TOKEN" ]; then
+            echo "::error::secret GALAXY_API_KEY is not set in the galaxy environment"
+            exit 1
+          fi
+          "$ANSIBLE/ansible-galaxy" collection publish "$TARBALL"
+      - name: Check that Galaxy reports the release tarball's sha256
+        run: |
+          # the version can take a moment to appear in the published repository after the import
+          for _ in $(seq 30); do
+            if curl --silent --fail --max-time 30 --output "$RUNNER_TEMP/galaxy-version.json" "$GALAXY_VERSIONS_URL/$VERSION/"; then
+              galaxy_sha256=$(jq -r '.artifact.sha256' "$RUNNER_TEMP/galaxy-version.json")
+              if [ "$galaxy_sha256" != "$SHA256" ]; then
+                echo "::error::Galaxy serves $VERSION with sha256 $galaxy_sha256, the release tarball has $SHA256"
+                exit 1
+              fi
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::$VERSION did not appear on Galaxy at $GALAXY_VERSIONS_URL/$VERSION/"
+          exit 1
+      - name: Install from Galaxy and read every plugin's docs
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ runner.temp }}/collections
+          ANSIBLE: ${{ github.workspace }}/.venv/bin
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          "$ANSIBLE/ansible-galaxy" collection install "ramondevprivate.common:==$VERSION" -p "$ANSIBLE_COLLECTIONS_PATH"
+          installed=$("$ANSIBLE/ansible-galaxy" collection list ramondevprivate.common --format json \
+            | jq -r '.[]["ramondevprivate.common"].version')
+          if [ "$installed" != "$VERSION" ]; then
+            echo "::error::installed ramondevprivate.common $installed from Galaxy, expected $VERSION"
+            exit 1
+          fi
+          checked=0
+          for type in module filter lookup role; do
+            names=$("$ANSIBLE/ansible-doc" -t "$type" -l -j ramondevprivate.common | jq -r 'keys[]')
+            for name in $names; do
+              "$ANSIBLE/ansible-doc" -t "$type" "$name" > /dev/null
+              checked=$((checked + 1))
+            done
+          done
+          if [ "$checked" -eq 0 ]; then
+            echo "::error::the collection installed from Galaxy lists no plugins or roles"
+            exit 1
+          fi
+      - name: Write Galaxy summary
+        run: |
+          {
+            echo "## 🌐 Published ramondevprivate.common $VERSION on Ansible Galaxy"
+            echo ""
+            echo "https://galaxy.ansible.com/ui/repo/published/ramondevprivate/common/"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   pages:
     name: Deploy the docs
-    needs: [release]
+    needs: [release, galaxy] # the docs tell readers to install from Galaxy
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     timeout-minutes: 20

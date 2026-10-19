@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/RamonDevPrivate/ansible-common/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/RamonDevPrivate/ansible-common/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/RamonDevPrivate/ansible-common?label=ramondevprivate.common)](https://github.com/RamonDevPrivate/ansible-common/releases/latest)
+[![Galaxy](https://img.shields.io/ansible/collection/v/ramondevprivate/common?label=galaxy)](https://galaxy.ansible.com/ui/repo/published/ramondevprivate/common/)
 [![Docs](https://img.shields.io/github/deployments/RamonDevPrivate/ansible-common/github-pages?label=docs)](https://ramondevprivate.github.io/ansible-common/)
 [![License](https://img.shields.io/github/license/RamonDevPrivate/ansible-common)](https://github.com/RamonDevPrivate/ansible-common/blob/main/COPYING)
 
@@ -16,7 +17,7 @@ collection, but every role documents its assumptions and variables.
 
 | Content | Type | Purpose |
 |---|---|---|
-| [`fleet_inventory`](roles/fleet_inventory/README.md) | role | Documents servers read-only as Markdown pages for Obsidian |
+| [`fleet_inventory`](https://github.com/RamonDevPrivate/ansible-common/blob/main/ansible_collections/ramondevprivate/common/roles/fleet_inventory/README.md) | role | Documents servers read-only as Markdown pages for Obsidian |
 | `fleet_info` | module | Read-only server facts for `fleet_inventory` |
 | `fleet_snapshot`, `fleet_report`, `fleet_probe_targets`, `fleet_exposure`, `fleet_probe_errors`, `fleet_unreached` | filter | Building blocks of `fleet_inventory` |
 | `md_escape` | filter | Makes a value safe to print in Markdown |
@@ -43,10 +44,29 @@ Roles can have their own requirements, such as `become: true` or an extra host; 
 
 ## Installation
 
-The collection is not on Ansible Galaxy; install it from Git. `ansible-galaxy` needs the path of the collection
-inside the repo after the `#`.
+The collection is on [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/ramondevprivate/common/):
+
+```bash
+ansible-galaxy collection install ramondevprivate.common
+```
 
 ### Installing from a requirements file
+
+```yaml
+collections:
+  - name: ramondevprivate.common
+    version: 1.0.0
+```
+
+```bash
+ansible-galaxy collection install -r requirements.yml
+```
+
+### Installing from Git
+
+Every release is also tagged in the repository. `ansible-galaxy` needs the path of the collection inside the repo
+after the `#`; `version` takes a release tag (`v1.0.0`) or a commit SHA. A tag is easier to read; a SHA can't be
+modified later on.
 
 ```yaml
 collections:
@@ -55,19 +75,13 @@ collections:
     version: v1.0.0
 ```
 
-```bash
-ansible-galaxy collection install -r requirements.yml
-```
-
-### Installing a specific version
-
-`version` takes a release tag (`v1.0.0`) or a commit SHA. A tag is easier to read; a SHA can't be modified later on.
-
 ### Upgrading
 
-Change `version` in `requirements.yml` and run the install command again.
+Change `version` in `requirements.yml` and run the install command again, or upgrade to the latest release with
+`ansible-galaxy collection install --upgrade ramondevprivate.common`.
 
-To work on the collection itself, use a local checkout instead; see the repository README.
+To work on the collection itself, use a local checkout instead; see the
+[repository README](https://github.com/RamonDevPrivate/ansible-common#readme).
 
 ## Use cases
 
@@ -88,12 +102,13 @@ To work on the collection itself, use a local checkout instead; see the reposito
 ## Testing
 
 Tested with ansible-core 2.21 against Debian 12 and 13. Changes are checked with `ansible-test` (sanity, units,
-integration), linters and type checks; the commands are in the repository README.
+integration), linters and type checks; the commands are in the
+[repository README](https://github.com/RamonDevPrivate/ansible-common#checks).
 
 ## Release notes
 
-See the [changelog](CHANGELOG.md).
+See the [changelog](https://github.com/RamonDevPrivate/ansible-common/blob/main/ansible_collections/ramondevprivate/common/CHANGELOG.md).
 
 ## License
 
-GNU General Public License v3.0 or later. The full text is in [COPYING](COPYING), which ships with the collection.
+GNU General Public License v3.0 or later. The full text is in [COPYING](https://github.com/RamonDevPrivate/ansible-common/blob/main/ansible_collections/ramondevprivate/common/COPYING), which ships with the collection.

@@ -45,9 +45,9 @@ Dependencies are locked in `uv.lock` and resolve only to releases that are at le
 
 ## Releases
 
-Maintainers release from the Actions tab with the Release workflow. It runs the full check suite, bumps the version from the commits since the last release (`feat` minor; `fix`, `perf` and `refactor` patch; `!` major; other types alone don't bump, a release of them needs `release_as`), writes the changelog, tags, creates the GitHub release with the built collection and its provenance attestation, verifies the release by installing it, and deploys the HTML docs. `dry_run` runs everything without pushing, releasing or deploying. If a run fails after the tag was pushed, running it again releases that tag without a new bump.
+Maintainers release from the Actions tab with the Release workflow. It runs the full check suite, bumps the version from the commits since the last release (`feat` minor; `fix`, `perf` and `refactor` patch; `!` major; other types alone don't bump, a release of them needs `release_as`), writes the changelog, tags, creates the GitHub release with the built collection and its provenance attestation, verifies the release by installing it, publishes the same tarball to Ansible Galaxy and installs it from there, and then deploys the HTML docs. `dry_run` runs everything without pushing, releasing, publishing or deploying. If a run fails after the tag was pushed, running it again releases that tag without a new bump; a version that is already on Galaxy is not uploaded again (Galaxy doesn't accept a version twice). After a cancelled run, wait until Galaxy has finished importing an upload before running it again.
 
-The workflow needs the `release` environment (secret `RELEASE_APP_PRIVATE_KEY`, variable `RELEASE_GITHUB_CLIENT_ID` of the release app, which may bypass the `main` ruleset) and GitHub Pages with the source "GitHub Actions" (its `github-pages` environment allows `main`).
+The workflow needs the `release` environment (secret `RELEASE_APP_PRIVATE_KEY`, variable `RELEASE_GITHUB_CLIENT_ID` of the release app, which may bypass the `main` ruleset), the `galaxy` environment (secret `GALAXY_API_KEY`, an API token of the `ramondevprivate` namespace from galaxy.ansible.com; deployments only from `main`), and GitHub Pages with the source "GitHub Actions" (its `github-pages` environment allows `main`).
 
 ## Review checklist
 

@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/RamonDevPrivate/ansible-common/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/RamonDevPrivate/ansible-common/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/RamonDevPrivate/ansible-common?label=ramondevprivate.common)](https://github.com/RamonDevPrivate/ansible-common/releases/latest)
+[![Galaxy](https://img.shields.io/ansible/collection/v/ramondevprivate/common?label=galaxy)](https://galaxy.ansible.com/ui/repo/published/ramondevprivate/common/)
 [![Docs](https://img.shields.io/github/deployments/RamonDevPrivate/ansible-common/github-pages?label=docs)](https://ramondevprivate.github.io/ansible-common/)
 [![License](https://img.shields.io/github/license/RamonDevPrivate/ansible-common)](https://github.com/RamonDevPrivate/ansible-common/blob/main/COPYING)
 
