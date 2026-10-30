@@ -8,6 +8,8 @@ DOCUMENTATION:
   description:
     - Reduces C(ansible_facts) to what the fleet inventory documents. OS, kernel, cores, RAM, disk capacity of
       real filesystems, and the IP addresses of relevant interfaces.
+    - The kernel date is taken from the end of C(uname -v) (the C(kernel_version) fact). On Debian it is the package
+      date, on other kernels the build date. It is empty if C(uname -v) has no date in a known format.
     - Bind mounts and pseudo filesystems are not counted, and each device counts once.
     - Interfaces C(lo), C(docker0), C(br-*) and C(veth*) are skipped.
   positional: host, collected_at, collected

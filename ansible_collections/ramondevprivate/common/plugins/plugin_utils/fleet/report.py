@@ -20,6 +20,7 @@ from ansible_collections.ramondevprivate.common.plugins.module_utils.fleet.schem
     AuthorizedKey,
     Snapshot,
     Sudo,
+    SystemInfo,
     User,
 )
 from ansible_collections.ramondevprivate.common.plugins.module_utils.fleet.users import sudo_runas
@@ -249,6 +250,13 @@ def build_report(current: object, stored: object, unreachable: object, options: 
     }
 
 
+def _kernel_label(system: SystemInfo) -> str:
+    """Kernel release with its date, e.g. "6.12.113+deb13-amd64 (2026-10-15)"; the release alone without a date."""
+    if system["kernel"] and system["kernel_date"]:
+        return f"{system['kernel']} ({system['kernel_date']})"
+    return system["kernel"]
+
+
 def _host_view(snapshot: Snapshot, *, reached: bool, options: ReportOptions) -> HostView:
     system = snapshot["system"]
     daemons = snapshot["docker"]
@@ -264,7 +272,7 @@ def _host_view(snapshot: Snapshot, *, reached: bool, options: ReportOptions) -> 
         "reached": reached,
         "last_updated": snapshot["collected_at"][:10],
         "os": f"{system['distribution']} {system['version']}".strip(),
-        "kernel": system["kernel"],
+        "kernel": _kernel_label(system),
         "cores": system["cores"],
         "ram": format_bytes(system["ram_mb"] * _MIB),
         "disk": format_bytes(system["disk"]["total_bytes"]),

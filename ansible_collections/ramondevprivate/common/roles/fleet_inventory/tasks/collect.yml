@@ -5,7 +5,6 @@
       - min
       - hardware
       - network
-  when: ansible_facts.mounts is not defined or ansible_facts.interfaces is not defined
 
 - name: collect | Collect fleet info
   ramondevprivate.common.fleet_info:

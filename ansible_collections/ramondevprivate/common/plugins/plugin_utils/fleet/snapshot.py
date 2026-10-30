@@ -2,6 +2,7 @@
 # GNU General Public License v3.0+ (see https://www.gnu.org/licenses/gpl-3.0.txt)
 """Build a host's fleet snapshot from its facts, and read stored snapshots back (runs on the controller)."""
 
+import datetime
 import ipaddress
 import re
 from typing import Final, Literal
@@ -83,10 +84,34 @@ def _system(facts: Data) -> SystemInfo:
         "version": get_str(facts, "distribution_version"),
         "release": get_str(facts, "distribution_release"),
         "kernel": get_str(facts, "kernel"),
+        "kernel_date": kernel_date(get_str(facts, "kernel_version")),
         "cores": get_int(facts, "processor_vcpus"),
         "ram_mb": get_int(facts, "memtotal_mb"),
         "disk": disk(get_list(facts, "mounts")),
     }
+
+
+# uname -v. Debian ends with the package date: "#1 SMP PREEMPT_DYNAMIC Debian 6.12.113-1 (2026-10-15)".
+# Ubuntu (and kernels built without a Debian changelog) end with the build time:
+# "#38-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 09:10:14 UTC 2026".
+KERNEL_PACKAGE_DATE: Final = re.compile(r"\((\d{4}-\d{2}-\d{2})\)\s*$")
+KERNEL_BUILD_TIME: Final = re.compile(r"\b([A-Z][a-z]{2}) +(\d{1,2}) \d{2}:\d{2}:\d{2}(?: [A-Z]{2,5})? (\d{4})\s*$")
+# Own month table instead of strptime(%b): strptime follows the controller's locale, uname -v is always English.
+MONTHS: Final = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def kernel_date(kernel_version: str) -> str:
+    """Date of the running kernel as YYYY-MM-DD from uname -v; "" if it has none in a known format."""
+    if match := KERNEL_PACKAGE_DATE.search(kernel_version):
+        text = match.group(1)
+    elif (match := KERNEL_BUILD_TIME.search(kernel_version)) and match.group(1) in MONTHS:
+        text = f"{match.group(3)}-{MONTHS.index(match.group(1)) + 1:02d}-{int(match.group(2)):02d}"
+    else:
+        return ""
+    try:
+        return datetime.date.fromisoformat(text).isoformat()
+    except ValueError:  # 2026-02-30 and the like
+        return ""
 
 
 def disk(mounts: list[object]) -> Disk:
@@ -197,6 +222,7 @@ def parse_snapshot(value: object) -> Snapshot | None:
             "version": get_str(system, "version"),
             "release": get_str(system, "release"),
             "kernel": get_str(system, "kernel"),
+            "kernel_date": get_str(system, "kernel_date"),  # "" in snapshots stored before it existed
             "cores": get_int(system, "cores"),
             "ram_mb": get_int(system, "ram_mb"),
             "disk": {

@@ -15,6 +15,7 @@ from ansible_collections.ramondevprivate.common.plugins.plugin_utils.fleet.snaps
     build_snapshot,
     disk,
     is_private,
+    kernel_date,
     mark_unreached,
     parse_snapshot,
 )
@@ -146,6 +147,47 @@ def test_missing_facts_fall_back_to_defaults() -> None:
     assert system["distribution"] == "unknown"
     assert system["cores"] == 0
     assert system["disk"]["total_bytes"] == 0
+    assert system["kernel_date"] == ""
+
+
+@pytest.mark.parametrize(
+    ("kernel_version", "date"),
+    [
+        ("#1 SMP PREEMPT_DYNAMIC Debian 6.12.113-1 (2026-10-15)", "2026-10-15"),
+        ("#1 SMP PREEMPT_DYNAMIC Debian 6.1.190-1 (2026-10-16)", "2026-10-16"),
+        ("#38-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 09:10:14 UTC 2026", "2026-09-04"),
+        ("#5 SMP Tue Oct 13 22:01:44 2026", "2026-10-13"),  # no time zone
+        ("#1 SMP PREEMPT_DYNAMIC Debian 6.12.113-1 (2026-02-30)", ""),  # not a date
+        ("#38-Ubuntu SMP Fri Foo  4 09:10:14 UTC 2026", ""),  # not a month
+        ("#1 SMP PREEMPT_DYNAMIC", ""),
+        ("", ""),
+    ],
+)
+def test_kernel_date(kernel_version: str, date: str) -> None:
+    """The date at the end of uname -v: Debian's package date or the build date; anything else is unknown."""
+    assert kernel_date(kernel_version) == date
+
+
+def test_snapshot_takes_the_kernel_date_from_the_kernel_version() -> None:
+    """The kernel_version fact is uname -v."""
+    facts = {"kernel": "6.12.113+deb13-amd64", "kernel_version": "#1 SMP PREEMPT_DYNAMIC Debian 6.12.113-1 (2026-10-15)"}
+
+    system = build_snapshot(facts, "host-x", "", {})["system"]
+
+    assert (system["kernel"], system["kernel_date"]) == ("6.12.113+deb13-amd64", "2026-10-15")
+
+
+def test_snapshot_stored_without_kernel_date_reads_as_unknown() -> None:
+    """Snapshots stored before kernel_date existed still parse, without a date."""
+    stored = stored_snapshot("a")
+    system = stored["system"]
+    assert isinstance(system, dict)
+    del system["kernel_date"]
+
+    parsed = parse_snapshot(stored)
+
+    assert parsed is not None
+    assert parsed["system"]["kernel_date"] == ""
 
 
 # Disk capacity
@@ -257,6 +299,7 @@ def stored_snapshot(host: str) -> dict[str, object]:
             "version": "13.7",
             "release": "trixie",
             "kernel": "6.12",
+            "kernel_date": "2026-10-15",
             "cores": 4,
             "ram_mb": 8192,
             "disk": {

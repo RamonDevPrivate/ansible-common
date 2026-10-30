@@ -189,6 +189,7 @@ class SystemInfo(TypedDict):
     version: str
     release: str
     kernel: str
+    kernel_date: str  # YYYY-MM-DD from uname -v, "" if it has no date in a known format
     cores: int
     ram_mb: int
     disk: Disk

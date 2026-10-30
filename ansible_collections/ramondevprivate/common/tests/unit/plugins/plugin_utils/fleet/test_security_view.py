@@ -84,6 +84,7 @@ def snapshot(
             "version": "13",
             "release": "trixie",
             "kernel": "",
+            "kernel_date": "",
             "cores": 1,
             "ram_mb": 1,
             "disk": {"total_bytes": 0, "mounts": []},

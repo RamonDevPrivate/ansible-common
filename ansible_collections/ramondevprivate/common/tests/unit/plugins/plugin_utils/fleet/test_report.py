@@ -362,6 +362,22 @@ def test_pages_keep_the_full_os_version() -> None:
 
 
 @pytest.mark.parametrize(
+    ("kernel", "date", "shown"),
+    [
+        ("6.12.113+deb13-amd64", "2026-10-15", "6.12.113+deb13-amd64 (2026-10-15)"),
+        ("6.12.113+deb13-amd64", "", "6.12.113+deb13-amd64"),  # stored before kernel_date existed
+        ("", "2026-10-15", ""),  # a date without a kernel says nothing
+    ],
+)
+def test_kernel_is_shown_with_its_date(kernel: str, date: str, shown: str) -> None:
+    """The servers table and the page show the kernel release with the date from uname -v."""
+    data = snapshot("a")
+    cast("dict[str, object]", data["system"]).update(kernel=kernel, kernel_date=date)
+
+    assert build_report(current=[data], stored=[], unreachable=[])["hosts"][0]["kernel"] == shown
+
+
+@pytest.mark.parametrize(
     ("hosts", "labels"),
     [
         pytest.param(["web.example.org", "db.example.org"], ["web", "db"], id="shared-domain"),

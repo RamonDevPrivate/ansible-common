@@ -7,6 +7,7 @@
         "version": "13.7",
         "release": "trixie",
         "kernel": "6.12.107+deb13-amd64",
+        "kernel_date": "2026-09-30",
         "cores": 10,
         "ram_mb": 32101,
         "disk": {
